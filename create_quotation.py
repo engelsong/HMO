@@ -15,6 +15,8 @@ from openpyxl import Workbook
 from openpyxl.styles import Border, Side, Alignment, Font, PatternFill
 from openpyxl.workbook.properties import CalcProperties
 from openpyxl.worksheet.page import PageMargins
+from openpyxl.styles.differential import DifferentialStyle
+from openpyxl.formatting.rule import CellIsRule
 
 
 class Project(object):
@@ -448,7 +450,7 @@ class Quotation(object):
         self.ws_cost['J15'].fill = yellow_fill
         self.ws_cost['J18'].font = bold_font
         self.ws_cost['J18'].number_format = '¥#,##0.00'
-        self.ws_cost['J18'] = '=G17*1.1*I17'
+        self.ws_cost['J18'] = '=round(G17*1.1*I17,2)'
         self.ws_cost['F14'] = '管理费'
         self.ws_cost['F14'].font = bold_font
         self.ws_cost['J14'].number_format = '¥#,##0.00'
@@ -646,17 +648,17 @@ class Quotation(object):
             self.ws_itemized_quotation['E{}'.format(row)] = 0
             self.ws_itemized_quotation['F{}'.format(row)] = 0
             self.ws_itemized_quotation['G{}'.format(
-                row)] = '=C{0}/C{1}*G{1}'.format(row, row_number - 3)
+                row)] = '=round(C{0}/C{1}*G{1},2)'.format(row, row_number - 3)
             self.ws_itemized_quotation['H{}'.format(
-                row)] = '=C{0}/C{1}*H{1}'.format(row, row_number - 3)
+                row)] = '=round(C{0}/C{1}*H{1},2)'.format(row, row_number - 3)
             self.ws_itemized_quotation['I{}'.format(
-                row)] = '=C{0}/C{1}*I{1}'.format(row, row_number - 3)
+                row)] = '=round(C{0}/C{1}*I{1},2)'.format(row, row_number - 3)
             self.ws_itemized_quotation['J{}'.format(
-                row)] = '=C{0}/C{1}*J{1}'.format(row, row_number - 3)
+                row)] = '=round(C{0}/C{1}*J{1},2)'.format(row, row_number - 3)
             self.ws_itemized_quotation['K{}'.format(
-                row)] = '=C{0}/C{1}*K{1}'.format(row, row_number - 3)
+                row)] = '=round(C{0}/C{1}*K{1},2)'.format(row, row_number - 3)
             self.ws_itemized_quotation['L{}'.format(
-                row)] = '=C{0}/C{1}*L{1}'.format(row, row_number - 3)
+                row)] = '=round(C{0}/C{1}*L{1},2)'.format(row, row_number - 3)
             self.ws_itemized_quotation['M{}'.format(
                 row)] = '=SUM(C{0}:L{0})'.format(row)
         self.ws_itemized_quotation['C{}'.format(
@@ -670,22 +672,50 @@ class Quotation(object):
         self.ws_itemized_quotation['G{}'.format(row_number - 3)] = '=费用输入!J15'
         self.ws_itemized_quotation['H{}'.format(row_number - 3)] = '=费用输入!J18'
         self.ws_itemized_quotation['I{}'.format(row_number - 3)] = '=费用输入!J9'
-        self.ws_itemized_quotation['K{}'.format(row_number - 3)] = '=IF(C{0}>50000000,(C{0}-50000000)*0.0075+835000,' \
-                                                                   'IF(C{0}>20000000,(C{0}-20000000)*0.01+535000,' \
-                                                                   'IF(C{0}>10000000,(C{0}-10000000)*0.02+335000,' \
-                                                                   'IF(C{0}>5000000,(C{0}-5000000)*0.03+185000,' \
-                                                                   'IF(C{0}>2000000,(C{0}-2000000)*0.035+80000,C{0}' \
-                                                                   '*0.04)))))'.format(
-                                                                       row_number - 3)
+        self.ws_itemized_quotation['K{}'.format(
+            row_number - 3)] = '=round(IF(C{0}>50000000,(C{0}-50000000)*0.0075+835000,IF(C{0}>20000000,(C{0}-20000000' \
+                               ')*0.01+535000,IF(C{0}>10000000,(C{0}-10000000)*0.02+335000,IF(C{0}>5000000,(C{0}-' \
+                               '5000000)*0.03+185000,IF(C{0}>2000000,(C{0}-2000000)*0.035+80000,C{0}*0.04))))),2)'\
+            .format(row_number - 3)
         self.ws_itemized_quotation['L{}'.format(row_number - 3)] = \
-            '=M{0}/1.13*0.13-C{0}/1.13*0.13-G{0}/1.06*0.06'.format(
+            '=round((M{0}/1.13*0.13-C{0}/1.13*0.13-G{0}/1.06*0.06),2)'.format(
                 row_number - 3)
         self.ws_itemized_quotation['M{}'.format(
             row_number - 3)] = '=SUM(C{0}:L{0})'.format(row_number - 3)
         self.ws_itemized_quotation['J{}'.format(
-            row_number - 3)] = '=SUM(C{0}:I{0})*3/12*0.0435'.format(row_number - 3)
+            row_number - 3)] = '=round(SUM(C{0}:I{0})*3/12*0.0435,2)'.format(row_number - 3)
         self.ws_itemized_quotation['J{}'.format(
             row_number - 3)].fill = yellow_fill
+        self.ws_itemized_quotation['N{}'.format(
+            row_number - 3)] = '=SUM(M3:M{})'.format(row_number - 4)
+
+        # 低价项目针对部分单元格进行修改
+        if self.project.is_lowprice:
+            for row in range(3, row_number - 3):
+                self.ws_itemized_quotation['G{}'.format(row)] = 0.01
+                self.ws_itemized_quotation['H{}'.format(row)] = 0.01
+                self.ws_itemized_quotation['I{}'.format(row)] = 0.01
+            self.ws_itemized_quotation['G{}'.format(row_number - 3)] = '=sum(G3:G{})'.format(row_number - 4)
+            self.ws_itemized_quotation['H{}'.format(row_number - 3)] = '=sum(H3:H{})'.format(row_number - 4)
+            self.ws_itemized_quotation['I{}'.format(row_number - 3)] = '=sum(I3:I{})'.format(row_number - 4)
+            self.ws_itemized_quotation['J{}'.format(
+                row_number - 3)] = '=round((SUM(C{0}:I{0})*3/12*0.0435)*0.8,2)'.format(row_number - 3)
+            self.ws_itemized_quotation['K{}'.format(
+                row_number - 3)] = '=round(IF(C{0}>50000000,(C{0}-50000000)*0.0075+835000,IF(C{0}>20000000,' \
+                                   '(C{0}-20000000)*0.01+535000,IF(C{0}>10000000,(C{0}-10000000)*0.02+335000,' \
+                                   'IF(C{0}>5000000,(C{0}-5000000)*0.03+185000,IF(C{0}>2000000,' \
+                                   '(C{0}-2000000)*0.035+80000,C{0}*0.04)))))*0.8,2)'.format(row_number - 3)
+            self.ws_itemized_quotation['L{}'.format(row_number - 3)] = \
+                '=round((M{0}/1.13*0.13-C{0}/1.13*0.13-G{0}/1.06*0.06)*0.9,2)'.format(
+                    row_number - 3)
+
+        # 增加条件格式判断
+        red_fill = PatternFill(
+            start_color='EE1111',
+            end_color='EE1111',
+            fill_type='solid')
+        self.ws_itemized_quotation.conditional_formatting.add('N{}'.format(row_number - 3), CellIsRule(
+            operator='notEqual', formula=['M{}'.format(row_number - 3)], fill=red_fill))
 
         # 合并需要合并单元格
         self.ws_itemized_quotation.merge_cells('A1:M1')
@@ -780,7 +810,7 @@ class Quotation(object):
             self.ws_summed_quotation['J{}'.format(
                 row)].number_format = '#,##0.00'
             self.ws_summed_quotation['G{}'.format(
-                row)] = '=J{0}/I{0}'.format(row)
+                row)] = '=round(J{0}/I{0},2)'.format(row)
             self.ws_summed_quotation['G{}'.format(
                 row)].number_format = '#,##0.00'
         self.ws_summed_quotation['A{}'.format(row_number - 1)] = '合计金额'
@@ -1042,6 +1072,8 @@ class Quotation(object):
                 self.ws_techserve['D{}'.format(i)].number_format = '¥#,##0.00'
             if i > 5:
                 self.ws_techserve['G{}'.format(i)].number_format = '$#,##0.00'
+        if self.project.is_lowprice:
+            self.ws_techserve['F7'] = self.project.techinfo[1] - 1
         # 填充备注
         self.ws_techserve['A18'] = '注：'
         self.ws_techserve['B18'] = '（1）100美元='
@@ -1055,8 +1087,12 @@ class Quotation(object):
 
         # 填充表格
         self.ws_techserve['D3'] = 3000
-        self.ws_techserve['D4'] = 2000
-        self.ws_techserve['D5'] = 10000
+        if not self.project.is_lowprice:
+            self.ws_techserve['D4'] = 2000
+            self.ws_techserve['D5'] = 10000
+        else:
+            self.ws_techserve['D4'] = 0
+            self.ws_techserve['D5'] = 0
         self.ws_techserve['D5'].fill = yellow_fill
         for i in range(6, 9):
             self.ws_techserve['G{}'.format(i)] = '=C{0}*E{0}*F{0}'.format(i)
@@ -1064,7 +1100,8 @@ class Quotation(object):
         self.ws_techserve['H3'] = '=D3*F3*E3/30'
         self.ws_techserve['H4'] = '=D4*E4'
         self.ws_techserve['H5'] = '=D5*E5'
-        self.ws_techserve['H14'] = '=(H3+H4+H6+H10)*IF(E3<6,0.21,IF(E3<11,0.18,IF(E3<21,0.15,IF(E3<41,0.12,0.09))))'
+        self.ws_techserve['H14'] = '=round((H3+H4+H6+H10)*IF(E7<6,0.21,IF(E7<11,0.18,IF(E7<21,0.15,IF(E7<41,0.12,0.09' \
+                                   ')))),2)'
         self.ws_techserve['H16'] = '=SUM(H3:H8, H10:H15)'
         self.ws_techserve['G16'] = '=SUM(G6:G8)'
 
@@ -1320,27 +1357,36 @@ class Quotation(object):
         self.ws_training['D10'] = 200
         self.ws_training['D11'] = 100
         self.ws_training['D12'] = 0
+        self.ws_training['D12'].fill = yellow_fill
         self.ws_training['D15'] = 140
         self.ws_training['D16'] = 300
+
         # 填写F列
         for i in [4, 6, 7, 8, 9, 10, 11, 12, 15, 16]:
             self.ws_training['F{}'.format(i)].number_format = '0'
         self.ws_training['F4'] = self.project.training_days
         self.ws_training['F6'] = self.project.training_days
-        self.ws_training['F7'] = self.project.training_days
-        self.ws_training['F8'] = 1
+        self.ws_training['F7'] = self.project.training_days - 1
         self.ws_training['F9'] = self.project.training_days
-        self.ws_training['F10'] = 1
-        self.ws_training['F11'] = 1
-        self.ws_training['F12'] = 1
+        self.ws_training['F11'] = '-'
+        self.ws_training['F12'] = '-'
         self.ws_training['F15'] = self.project.training_days
         self.ws_training['F16'] = self.project.training_days
+        if self.project.is_lowprice:
+            self.ws_training['F8'] = 0
+            self.ws_training['F10'] = 0
+        else:
+            self.ws_training['F8'] = 1
+            self.ws_training['F10'] = 1
+
 
         # 填写G列
         for i in range(4, 18):
             self.ws_training['G{}'.format(i)].number_format = '¥#,##0.00'
             if i in [5, 13]:
                 pass
+            elif i in (11, 12):
+                self.ws_training['G{}'.format(i)] = '=D{0}*E{0}'.format(i)
             elif i == 14:
                 self.ws_training['G{}'.format(
                     i)] = '=ROUND((SUM(G4,G6:G11))*0.06,2)'
