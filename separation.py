@@ -15,7 +15,11 @@ from datetime import datetime
 from openpyxl import load_workbook
 
 
-def separate_wb(filename):
+def separate_wb():
+    wb_pattern = re.compile('^投标报价表\-?\w*(\.xlsx)$')
+    for doc in listdir():
+        if re.match(wb_pattern, doc):
+            filename = doc
     sheet_pattern = re.compile('^[0-9]\.\w*')
     my_wb = load_workbook(filename, data_only=True)
     name_list = []
@@ -31,12 +35,6 @@ def separate_wb(filename):
         wb_now.save('{}.xlsx'.format(name))
 
 
-wb_pattern = re.compile('^投标报价表\-?\w*(\.xlsx)$')
-
-for doc in listdir():
-    if re.match(wb_pattern, doc):
-        filename = doc
-
 if __name__ == "__main__":
     date_init = datetime.strptime('2020-10-01', '%Y-%m-%d').date()
     date_now = datetime.now().date()
@@ -44,11 +42,7 @@ if __name__ == "__main__":
         len(popen('hostname').read())).real * 10) + 100
     delta = date_now - date_init
     if delta.days < limited_days:
-        wb_pattern = re.compile('^投标报价表\-?\w*(\.xlsx)$')
-        for doc in listdir():
-            if re.match(wb_pattern, doc):
-                filename = doc
-        separate_wb(filename)
+        separate_wb()
     else:
         raise UserWarning('Out Of Date')
 
