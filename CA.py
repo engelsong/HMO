@@ -1990,12 +1990,15 @@ def make_dir():
 def main_loop(tips):
     while 1:
         user_input = input(tips)
-        for i in user_input:
-            if i not in '12345':
-                print('>>> 您输入非法指令，请重新输入 <<<')
-                break
+        if user_input == '':
+            print('<<< 您输入的指令为空，请重新输入 >>>')
         else:
-            break
+            for i in user_input:
+                if i not in '12345':
+                    print('<<< 您输入非法指令，请重新输入 >>>')
+                    break
+            else:
+                break
     project = Project('project.docx')
     quota = Quotation(project)
     content = Content(project)
@@ -2003,7 +2006,7 @@ def main_loop(tips):
     func_dict = {'1': quota.create_all, '2': content.create_all, '3': cover.generate, '4': make_dir, '5': separate_wb}
     for func in user_input:
         func_dict[func]()
-    input('>>>程序已经运行完成，按任意键退出<<<')
+    input('<<< 程序已经运行完成，按任意键退出 >>>')
 
 
 def main_func(tips):
@@ -2015,9 +2018,9 @@ def main_func(tips):
         try:
             main_loop(tips)
         except Exception as e:
-            input(e)
+            input('<<< 出现异常：{} >>>'.format(e))
     else:
-        input('>>>Out Of Date')
+        input('<<< 出现异常：Out Of Date >>>')
 
 tips = """
 请按照序号选择你需要的功能：
