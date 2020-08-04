@@ -8,8 +8,7 @@
 @time: 13:04
 """
 
-from os import linesep, popen
-from datetime import datetime
+
 from docx import Document
 from openpyxl import Workbook
 from openpyxl.styles import Border, Side, Alignment, Font
@@ -337,10 +336,10 @@ class Content(object):
                 content.insert(4, '物资检验一览表（非法检物资）')
         if self.project.is_cc:
             row_num += 1
-            content.insert(4, '来华培训方案及相关材料')
+            content.insert(4, '来华培训费报价表')
         if self.project.is_tech:
             row_num += 1
-            content.insert(4, '技术服务方案及相关材料')
+            content.insert(4, '技术服务费报价表')
         if self.project.is_lowprice:
             row_num -= 5
             for i in range(5):
@@ -364,7 +363,7 @@ class Content(object):
                         cell_now.value = content[i - 2]
                     else:
                         cell_now.alignment = Content.ctr_alignment
-                    if i in (2, row_num - 5, row_num - 6):
+                    if i in (2, row_num - 5, row_num - 6) and not self.project.is_lowprice:
                         cell_now.border = Content.header_border
                     elif i != row_num - 1:
                         cell_now.border = Content.normal_border
@@ -381,9 +380,12 @@ class Content(object):
                 row_num - 4)].font = Content.header_font
 
         # 填写序号
-        for i in range(4, row_num - 4):
-            self.ws_eco_com['A{}'.format(i)] = num[i - 4]
-        if not self.project.is_lowprice:
+        if self.project.is_lowprice:
+            for i in range(4, row_num + 1):
+                self.ws_eco_com['A{}'.format(i)] = num[i - 4]
+        else:
+            for i in range(4, row_num - 4):
+                self.ws_eco_com['A{}'.format(i)] = num[i - 4]
             for i in range(row_num - 3, row_num + 1):
                 self.ws_eco_com['A{}'.format(i)] = num[i - row_num + 3]
 

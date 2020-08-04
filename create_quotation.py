@@ -15,7 +15,6 @@ from openpyxl import Workbook
 from openpyxl.styles import Border, Side, Alignment, Font, PatternFill
 from openpyxl.workbook.properties import CalcProperties
 from openpyxl.worksheet.page import PageMargins
-from openpyxl.styles.differential import DifferentialStyle
 from openpyxl.formatting.rule import CellIsRule
 
 

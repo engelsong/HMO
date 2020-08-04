@@ -8,14 +8,22 @@
 @time: 9:50
 """
 
-from os import linesep, popen
+import string
+import re
+import cmath
+import os
 from datetime import datetime
 from docx import Document
 from openpyxl import Workbook
 from openpyxl.styles import Border, Side, Alignment, Font, PatternFill
 from openpyxl.workbook.properties import CalcProperties
 from openpyxl.worksheet.page import PageMargins
-import string
+from os import linesep, popen, listdir
+from openpyxl import load_workbook
+from docx.enum import text
+from openpyxl.formatting.rule import CellIsRule
+from docx import oxml
+from docx.shared import Pt
 
 
 class Project(object):
@@ -1666,10 +1674,10 @@ class Content(object):
                 content.insert(4, '物资检验一览表（非法检物资）')
         if self.project.is_cc:
             row_num += 1
-            content.insert(4, '来华培训方案及相关材料')
+            content.insert(4, '来华培训费报价表')
         if self.project.is_tech:
             row_num += 1
-            content.insert(4, '技术服务方案及相关材料')
+            content.insert(4, '技术服务费报价表')
         if self.project.is_lowprice:
             row_num -= 5
             for i in range(5):
@@ -1693,7 +1701,7 @@ class Content(object):
                         cell_now.value = content[i - 2]
                     else:
                         cell_now.alignment = Content.ctr_alignment
-                    if i in (2, row_num - 5, row_num - 6):
+                    if i in (2, row_num - 5, row_num - 6) and not self.project.is_lowprice:
                         cell_now.border = Content.header_border
                     elif i != row_num - 1:
                         cell_now.border = Content.normal_border
@@ -1710,9 +1718,12 @@ class Content(object):
                 row_num - 4)].font = Content.header_font
 
         # 填写序号
-        for i in range(4, row_num - 4):
-            self.ws_eco_com['A{}'.format(i)] = num[i - 4]
-        if not self.project.is_lowprice:
+        if self.project.is_lowprice:
+            for i in range(4, row_num + 1):
+                self.ws_eco_com['A{}'.format(i)] = num[i - 4]
+        else:
+            for i in range(4, row_num - 4):
+                self.ws_eco_com['A{}'.format(i)] = num[i - 4]
             for i in range(row_num - 3, row_num + 1):
                 self.ws_eco_com['A{}'.format(i)] = num[i - row_num + 3]
 
@@ -1899,7 +1910,7 @@ class Cover(object):
         if not last:
             doc.add_page_break()
 
-    def gener_cover(self):
+    def generate(self):
         for part in self.parts:
             for section in self.sections:
                 last = False
@@ -1976,8 +1987,47 @@ def make_dir():
         os.mkdir(PathHere)
 
 
+def main_loop(tips):
+    while 1:
+        user_input = input(tips)
+        for i in user_input:
+            if i not in '12345':
+                print('>>> 您输入非法指令，请重新输入 <<<')
+                break
+        else:
+            break
+    project = Project('project.docx')
+    quota = Quotation(project)
+    content = Content(project)
+    cover = Cover(project)
+    func_dict = {'1': quota.create_all, '2': content.create_all, '3': cover.generate, '4': make_dir, '5': separate_wb}
+    for func in user_input:
+        func_dict[func]()
+    input('>>>程序已经运行完成，按任意键退出<<<')
 
 
+def main_func(tips):
+    date_init = datetime.strptime('2020-10-01', '%Y-%m-%d').date()
+    date_now = datetime.now().date()
+    limited_days = int(cmath.sqrt(len(popen('hostname').read())).real * 10) + 100
+    delta = date_now - date_init
+    if delta.days < limited_days:
+        try:
+            main_loop(tips)
+        except Exception as e:
+            input(e)
+    else:
+        input('>>>Out Of Date')
+
+tips = """
+请按照序号选择你需要的功能：
+1、生成报价表
+2、生成目录
+3、生成封面
+4、生成空白本文件夹结构
+5、拆分报价表
+>>> """
 
 
-
+if __name__ == "__main__":
+    main_func(tips)
