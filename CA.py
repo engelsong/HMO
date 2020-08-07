@@ -2005,7 +2005,12 @@ def main_loop(tips):
     cover = Cover(project)
     func_dict = {'1': quota.create_all, '2': content.create_all, '3': cover.generate, '4': make_dir, '5': separate_wb}
     for func in user_input:
-        func_dict[func]()
+        if func == '1' and os.path.exists('投标报价表-{}.xlsx'.format(project.name)):
+            temp_input = input('!!!该报价表已存在，请确认是否需要覆盖（Y/N）!!! >>> ')
+            if temp_input in 'Yy':
+                func_dict['1']()
+        else:
+            func_dict[func]()
     input('<<< 程序已经运行完成，按任意键退出 >>>')
 
 
