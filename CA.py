@@ -37,6 +37,7 @@ class Project(object):
         self.trans = None
         self.totalsum = 0
         self.is_lowprice = False  # 是否为低价法
+        self.sec_comlist = False
         self.is_tech = False  # 是否有技术服务
         self.is_qa = False  # 是否有售后
         self.is_cc = False  # 是否来华培训
@@ -61,12 +62,14 @@ class Project(object):
             self.commodities[index] = temp
         self.name, self.code, self.date, self.destination, self.trans = project_info[0:5]
         self.totalsum = int(project_info[5])
+
         if project_info[6] in 'yY':
             self.is_lowprice = True
         if project_info[7] in 'yY':
+            self.sec_comlist = True
+        if project_info[8] in 'yY':
             self.is_tech = True
-            self.techinfo += list(map(int, project_info[8:10]))
-            self.techinfo.append(list(map(int, project_info[10].split())))
+            self.techinfo += list(map(int, project_info[9:11]))
         if project_info[11] in 'yY':
             self.is_qa = True
         if project_info[12] in 'yY':
@@ -85,15 +88,13 @@ class Project(object):
         print('运输方式:', self.trans)
         print('对外货值：', self.totalsum)
         print('是否为低价法', '是' if self.is_lowprice is True else '否')
+        print('是否有供货清单二', '是' if self.sec_comlist is True else '否')
         print('是否有技术服务:', '是' if self.is_tech is True else '否')
         print('是否有售后服务:', '是' if self.is_qa is True else '否')
         print('是否有来华培训', '是' if self.is_cc is True else '否')
         if self.is_tech:
             print('技术服务人数:', self.techinfo[0])
             print('技术服务天数:', self.techinfo[1])
-            print('伙食费:', self.techinfo[2][0])
-            print('住宿费:', self.techinfo[2][1])
-            print('公杂费:', self.techinfo[2][2])
         if self.is_cc:
             print('来华培训人数：', self.training_num)
             print('来华培训天数：', self.training_days)
@@ -2015,7 +2016,7 @@ def main_loop(tips):
 
 
 def main_func(tips):
-    date_init = datetime.strptime('2020-10-01', '%Y-%m-%d').date()
+    date_init = datetime.strptime('2021-10-01', '%Y-%m-%d').date()
     date_now = datetime.now().date()
     limited_days = int(cmath.sqrt(len(popen('hostname').read())).real * 10) + 100
     delta = date_now - date_init
