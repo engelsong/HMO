@@ -1463,16 +1463,18 @@ class Content(object):
         self.ws_lob = None
         self.ws_tech = None
         self.ws_qual = None
-        self.ws_eco_com = None
+        self.ws_eco = None
+        self.ws_com = None
         self.my_title = 'content'
 
     def create_all(self):
         """生成目录总方法"""
 
-        self.create_lob()
-        self.create_tech()
         self.create_qual()
-        self.create_eco_com()
+        self.create_com()
+        self.create_eco()
+        self.create_tech()
+        self.create_lob()
         self.wb.save('目录—{}.xlsx'.format(self.project.name))
 
     def create_lob(self):
@@ -1480,7 +1482,7 @@ class Content(object):
         self.ws_lob = self.wb.create_sheet('投标函', 0)
         col_titles = ['序号', '内容', '页码']
         content = [['一', '投标函'], ['二', '法定代表人身份证明书'], ['三', '法定代表人授权书'],
-                   ['四', '援外物资项目投标廉政承诺书'], ['五', '企业内控承诺'], ['六', '投标保证金银行保函']]
+                   ['四', '守法廉政承诺书'], ['五', '企业内控承诺'], ['六', '投标保证金银行保函']]
         col_width = [10, 60, 10]
         col_num = 3
         row_num = 8
@@ -1535,31 +1537,33 @@ class Content(object):
         content = [
             '技术偏离表',
             '物资选型部分',
-            '（一）物资选型一览表',
-            '（二）物资生产供货企业信息及技术资料',
+            '供货清单（一）中各项物资选型一览表',
+            '供货清单（一）中各项物资相关资料',
             '包装方案',
-            '运输方案和计划',
-            '附：承运人出具的书面运输承诺书',
-            '物资检验服务方案',
-            '附：检验机构服务方案及实力情况',
-            '重点和难点问题应对方案']
+            '运输相关文件',
+            '物资自检验收方案',
+            '物资第三方检验相关文件',
+            '对外实施工作主体落实承诺书',
+            '物资生产企业三体系认证相关资料',
+            '物资节能产品认证相关资料',
+            '物资环境标志产品认证相关资料']
         # 存放中文序号
-        num = ['一', '二', '三', '四', '', '五', '', '六', '七', '八', '九', '十']
+        num = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二', '十三']
         col_width = [10, 60, 10]
         col_num = 3
 
         # 确定行数
         com_num = len(self.project.commodities)
-        row_num = com_num + 12
-        if self.project.is_tech:
-            row_num += 1
-            content.append('技术服务方案及相关材料')
-        if self.project.is_qa:
-            row_num += 1
-            content.append('售后服务方案及相关材料')
+        row_num = com_num + 14
         if self.project.is_cc:
             row_num += 1
-            content.append('来华培训方案及相关材料')
+            content.insert(9, '来华培训方案及相关材料')
+        if self.project.is_qa:
+            row_num += 1
+            content.insert(9, '售后服务方案及相关材料')
+        if self.project.is_tech:
+            row_num += 1
+            content.insert(9, '技术服务方案及相关材料')
 
         # 创建专用样式
         third_alignment = Alignment(
@@ -1626,11 +1630,11 @@ class Content(object):
                             cell_now.value = num[i - com_num - 4]
                     if i != row_num - 1:
                         cell_now.border = Content.normal_border
-        for i in (9, 11):  # 修改两处格式
-            self.ws_tech.cell(row=com_num + i, column=2).font = third_font
-            self.ws_tech.cell(
-                row=com_num + i,
-                column=2).alignment = third_alignment
+        # for i in (9, 11):  # 修改两处格式
+        #     self.ws_tech.cell(row=com_num + i, column=2).font = third_font
+        #     self.ws_tech.cell(
+        #         row=com_num + i,
+        #         column=2).alignment = third_alignment
         letters = string.ascii_uppercase
         for i in range(col_num):  # 修改列宽
             self.ws_tech.column_dimensions[letters[i]].width = col_width[i]
@@ -1642,53 +1646,43 @@ class Content(object):
         self.ws_tech.page_margins = PageMargins(
             top=0.5, bottom=0.5, header=0.1, footer=0.1)
 
-    def create_eco_com(self):
-        self.ws_eco_com = self.wb.create_sheet('经济和商务', 0)
+    def create_eco(self):
+        self.ws_eco = self.wb.create_sheet('经济标', 0)
         col_titles = ['序号', '内容', '页码']
         content = [
-            '',
             '报价总表',
-            '物资对内总报价表',
             '物资对内分项报价表',
-            '',
-            '守信企业确认书',
-            '上一年度进出口额证明材料',
-            '项目负责人援外物资项目或境外项目业绩说明',
-            '同类物资业绩一览表'
         ]
         col_width = [10, 60, 10]
         num = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十']
         col_num = 3
 
         # 确定行数
-        row_num = 11
+        row_num = 4
         if len(self.project.qc) == 0:
             row_num += 1
-            content.insert(4, '物资检验一览表（非法检物资）')
+            content.insert(2, '物资检验一览表（非法检物资）')
         else:
             if len(self.project.qc) == len(self.project.commodities):
                 row_num += 1
-                content.insert(4, '物资检验一览表（法检物资）')
+                content.insert(2, '物资检验一览表（法检物资）')
             else:
                 row_num += 2
-                content.insert(4, '物资检验一览表（法检物资）')
-                content.insert(4, '物资检验一览表（非法检物资）')
+                content.insert(2, '物资检验一览表（法检物资）')
+                content.insert(2, '物资检验一览表（非法检物资）')
         if self.project.is_cc:
             row_num += 1
-            content.insert(4, '来华培训费报价表')
+            content.insert(2, '来华培训费报价表')
         if self.project.is_tech:
             row_num += 1
-            content.insert(4, '技术服务费报价表')
-        if self.project.is_lowprice:
-            row_num -= 5
-            for i in range(5):
-                content.pop()
+            content.insert(2, '技术服务费报价表')
+
 
         # 初始化表格
         for i in range(1, row_num):
             for j in range(col_num):
-                cell_now = self.ws_eco_com.cell(row=i + 1, column=j + 1)
-                self.ws_eco_com.row_dimensions[i + 1].height = 45  # 修改行高
+                cell_now = self.ws_eco.cell(row=i + 1, column=j + 1)
+                self.ws_eco.row_dimensions[i + 1].height = 45  # 修改行高
                 # 判断行数来确定应用的字体和样式
                 if i == 1:  # 表头行样式填写
                     cell_now.font = Content.header_font
@@ -1702,76 +1696,120 @@ class Content(object):
                         cell_now.value = content[i - 2]
                     else:
                         cell_now.alignment = Content.ctr_alignment
-                    if i in (2, row_num - 5, row_num - 6) and not self.project.is_lowprice:
-                        cell_now.border = Content.header_border
-                    elif i != row_num - 1:
+                    if i != row_num - 1:
                         cell_now.border = Content.normal_border
         letters = string.ascii_uppercase
         for i in range(col_num):  # 修改列宽
-            self.ws_eco_com.column_dimensions[letters[i]].width = col_width[i]
+            self.ws_eco.column_dimensions[letters[i]].width = col_width[i]
 
         # 填写序号
-        self.ws_eco_com['A3'] = '经济标部分'
-        self.ws_eco_com['A3'].font = Content.header_font
-        if not self.project.is_lowprice:
-            self.ws_eco_com['A{}'.format(row_num - 4)] = '商务标部分'
-            self.ws_eco_com['A{}'.format(
-                row_num - 4)].font = Content.header_font
+        # self.ws_eco['A3'] = '经济标部分'
+        # self.ws_eco['A3'].font = Content.header_font
+        # if not self.project.is_lowprice:
+        #     self.ws_eco_com['A{}'.format(row_num - 4)] = '商务标部分'
+        #     self.ws_eco_com['A{}'.format(
+        #         row_num - 4)].font = Content.header_font
 
         # 填写序号
-        if self.project.is_lowprice:
-            for i in range(4, row_num + 1):
-                self.ws_eco_com['A{}'.format(i)] = num[i - 4]
-        else:
-            for i in range(4, row_num - 4):
-                self.ws_eco_com['A{}'.format(i)] = num[i - 4]
-            for i in range(row_num - 3, row_num + 1):
-                self.ws_eco_com['A{}'.format(i)] = num[i - row_num + 3]
+        for i in range(3, row_num + 1):
+            self.ws_eco['A{}'.format(i)] = num[i - 3]
+
 
         # 合并小标题
-        self.ws_eco_com.merge_cells('A3:C3')
-        if not self.project.is_lowprice:
-            self.ws_eco_com.merge_cells('A{0}:C{0}'.format(row_num - 4))
+        # self.ws_eco.merge_cells('A3:C3')
+        # if not self.project.is_lowprice:
+        #     self.ws_eco.merge_cells('A{0}:C{0}'.format(row_num - 4))
 
         # 填写抬头
-        self.ws_eco_com.merge_cells('A1:C1')
-        header = self.ws_eco_com['A1']
+        self.ws_eco.merge_cells('A1:C1')
+        header = self.ws_eco['A1']
         header.font = Content.title_font
         header.alignment = Content.ctr_alignment
         header.value = '目  录'
-        self.ws_eco_com.row_dimensions[1].height = 50
+        self.ws_eco.row_dimensions[1].height = 50
 
         # 打印设置
-        self.ws_eco_com.print_options.horizontalCentered = True
-        self.ws_eco_com.print_area = 'A1:C{}'.format(row_num)
-        self.ws_eco_com.page_setup.fitToWidth = 1
-        # self.ws_eco_com.page_margins = PageMargins(
+        self.ws_eco.print_options.horizontalCentered = True
+        self.ws_eco.print_area = 'A1:C{}'.format(row_num)
+        self.ws_eco.page_setup.fitToWidth = 1
+        # self.ws_eco.page_margins = PageMargins(
         #     top=0.5, bottom=0.5, header=0.1, footer=0.1)
+
+    def create_com(self):
+        self.ws_com = self.wb.create_sheet('商务标', 0)
+        col_titles = ['序号', '内容', '页码']
+        content = [['一', '同类物资出口业绩一览表及报关单'], ['二', '向受援国出口货物业绩一览表及报关单']]
+        col_width = [10, 60, 10]
+        col_num = 3
+        row_num = 4
+
+        # # 创建专用样式
+        # special_alignment = Alignment(
+        #     horizontal='left',
+        #     vertical='center',
+        #     wrap_text=True,
+        #     indent=0)
+        # special_font = Font(name='仿宋_GB2312', size=12)
+
+        # 初始化表格
+        for i in range(1, row_num):
+            for j in range(col_num):
+                cell_now = self.ws_com.cell(row=i + 1, column=j + 1)
+                self.ws_com.row_dimensions[i + 1].height = 45  # 修改行高
+                # 判断行数来确定应用的字体和样式
+                if i == 1:  # 表头行样式填写
+                    cell_now.font = Content.header_font
+                    cell_now.alignment = Content.ctr_alignment
+                    cell_now.border = Content.header_border
+                    cell_now.value = col_titles[j]
+                else:  # 其余
+                    cell_now.font = Content.normal_font
+                    if i != row_num - 1:
+                        cell_now.border = Content.normal_border
+                    if j == 1:
+                        cell_now.alignment = Content.left_alignment
+                        cell_now.value = content[i - 2][1]
+                    else:
+                        cell_now.alignment = Content.ctr_alignment
+                        if j == 0:
+                            cell_now.value = content[i - 2][0]
+
+        letters = string.ascii_uppercase
+        for i in range(col_num):  # 修改列宽
+            self.ws_com.column_dimensions[letters[i]].width = col_width[i]
+
+        # 填写抬头
+        self.ws_com.merge_cells('A1:C1')
+        header = self.ws_com['A1']
+        header.font = Content.title_font
+        header.alignment = Content.ctr_alignment
+        header.value = '目  录'
+        self.ws_com.row_dimensions[1].height = 50
+
+        # 打印设置
+        self.ws_com.print_options.horizontalCentered = True
+        self.ws_com.print_area = 'A1:C{}'.format(row_num)
+        self.ws_com.page_setup.fitToWidth = 1
+        self.ws_com.page_margins = PageMargins(
+            top=0.5, bottom=0.5, header=0.1, footer=0.1)
 
     def create_qual(self):
         self.ws_qual = self.wb.create_sheet('资格后审', 0)
         col_titles = ['序号', '内容', '页码']
         content = [['一', '资格后审申请函'], ['二', '证明文件']]
         content2 = [
-            '投标人的法人营业执照、援外物资项目实施企业资格证明文件',
+            '投标人的法人营业执照（复印件）',
+            '援外物资项目实施企业资格证明文件（复印件）',
             '法定代表人证明书和授权书（复印件）',
-            '未受到行政处罚且无不良行为记录的声明函',
-            '技术资质证明文件',
-            '财务审计报告',
-            '依法缴纳社会保障资金的证明和依法缴纳税收的证明',
+            '无重大违法记录的声明函',
+            '财务审计报告（复印件）',
+            '依法缴纳社会保障资金的证明和税收的证明（复印件）',
+            '特殊物资经营资格、资质许可证明文件（复印件）',
             '关联企业声明',
-            '受托检验机构营业执照副本复印件',
-            '受托检验机构从事进出口商品检验鉴定业务的许可文件的复印件',
-            '受托检验机构获得CNAS认可和CMA计量认证资质文件的复印件',
-            '受托检验机构获得ISO / IEC17020检验机构运行体系认证证书复印件',
-            '受托检验机构分公司 / 分支机构或实验室 / 合作实验室的证明材料',
-            '受托检验机构向我公司出具的《物资检验、核验和监装承诺书》',
-            '受托检验机构向你中心出具的《受托检验机构声明函》',
-            '其它',
-        ]
-        col_width = [8, 75, 8]
+            '其它']
+        col_width = [10, 60, 10]
         col_num = 3
-        row_num = 19
+        row_num = 13
 
         # 创建专用样式
         special_alignment = Alignment(
@@ -1785,7 +1823,7 @@ class Content(object):
         for i in range(1, row_num):
             for j in range(col_num):
                 cell_now = self.ws_qual.cell(row=i + 1, column=j + 1)
-                self.ws_qual.row_dimensions[i + 1].height = 35  # 修改行高
+                self.ws_qual.row_dimensions[i + 1].height = 45  # 修改行高
                 # 判断行数来确定应用的字体和样式
                 if i == 1:  # 表头行样式填写
                     cell_now.font = Content.header_font
