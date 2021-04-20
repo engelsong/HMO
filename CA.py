@@ -149,7 +149,7 @@ class Quotation(object):
 
     def create_general(self):
         """创建总报价表"""
-        self.ws_general = self.wb.create_sheet('1.报价总表', 3)
+        self.ws_general = self.wb.create_sheet('1.投标报价总表', 3)
         colum_title = ['序号', '费用项目', '合计金额', '备注']
         title_width = [10, 35, 25, 20]
         colum_number = len(colum_title)
@@ -872,7 +872,7 @@ class Quotation(object):
     def create_examination(self):
         """创建物资选型一览表（非法检）"""
         self.ws_examination = self.wb.create_sheet('7.非法检物资检验一览表', 3)
-        colum_title = ['序号', '品名', 'HS编码', '数量及单位', '', '品牌', '规格和型号', '金额', '生产厂商',
+        colum_title = ['序号', '品名', 'HS编码', '数量及单位', '', '品牌', '规格或型号', '金额', '生产厂商',
                        '供货商', '生产或供货地', '供货联系人及联系电话', '', '出厂日期', '出口港', '检验标准', '检验机构名称',
                        '', '', '备注']
         subcol_title = ['产地或供货地检验（查验）机构', '装运前核验机构', '口岸监装机构']
@@ -1141,7 +1141,7 @@ class Quotation(object):
     def create_lawexam(self):
         """创建物资选型一览表（法检物资）"""
         self.ws_lawexam = self.wb.create_sheet('6.法检物资检验一览表', 3)
-        colum_title = ['序号', '品名', 'HS编码', '数量及单位', '', '品牌', '规格和型号', '金额', '生产厂商',
+        colum_title = ['序号', '品名', 'HS编码', '数量及单位', '', '品牌', '规格或型号', '金额', '生产厂商',
                        '供货商', '生产或供货地', '供货联系人及联系电话', '', '出厂日期', '供货地商检部门',
                        '出口港', '检验标准', '口岸监装机构', '备注']
         title_width = [6, 14, 12, 3, 5, 8, 30, 16, 10, 10, 6, 6, 10, 8, 6, 13, 8, 6]
