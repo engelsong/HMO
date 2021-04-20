@@ -1971,11 +1971,11 @@ class Cover(object):
 
 
 def separate_wb():
-    wb_pattern = re.compile('^投标报价表\-?\w*(\.xlsx)$')
+    wb_pattern = re.compile('^投标报价表\-?[\w\S]*(\.xlsx)$')
     for doc in listdir():
         if re.match(wb_pattern, doc):
             filename = doc
-    sheet_pattern = re.compile('^[0-9]{1-2}\.\w*')
+    sheet_pattern = re.compile('^[0-9]{1,2}\.\w*')
     my_wb = load_workbook(filename, data_only=True)
     name_list = []
     for sheet in my_wb:
