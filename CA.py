@@ -1975,7 +1975,7 @@ def separate_wb():
     for doc in listdir():
         if re.match(wb_pattern, doc):
             filename = doc
-    sheet_pattern = re.compile('^[0-9]\.\w*')
+    sheet_pattern = re.compile('^[0-9]{1-2}\.\w*')
     my_wb = load_workbook(filename, data_only=True)
     name_list = []
     for sheet in my_wb:
