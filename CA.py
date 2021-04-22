@@ -129,6 +129,9 @@ class Quotation(object):
         self.ws_summed_quotation = None
         self.ws_general = None
         self.ws_training = None
+        self.ws_isolist = None
+        self.ws_conservlist = None
+        self.ws_eplist = None
 
     def create_all(self):
         self.create_input()
@@ -144,6 +147,9 @@ class Quotation(object):
         self.create_itemized_quotation()
         # # self.create_summed_quotation()
         self.create_general()
+        self.create_isolist()
+        self.create_conservlist()
+        self.create_eplist()
         self.wb.calculation = CalcProperties(iterate=True)
         self.wb.save('投标报价表-{}.xlsx'.format(self.project.name))
 
@@ -264,9 +270,10 @@ class Quotation(object):
         self.ws_input = self.wb.create_sheet('物资输入', 0)
         colum_title = ['序号', '品名', 'HS编码', '数量', '', '品牌', '型号', '规格', '单价',
                        '总价', '生产厂商', '供货商', '生产或供货地', '联系人',
-                       '联系电话', '出厂日期', '出口港', '检验标准', '检验机构', '交货期', '交货地点', '备注']
+                       '联系电话', '出厂日期', '出口港', '检验标准', '检验机构', '交货期', '交货地点',
+                       '三体系', '节能', '环保', '备注']
         title_width = [6, 14, 12, 3, 5, 10, 10, 30, 14, 16, 10, 10, 10, 10, 15, 10, 10, 15,
-                       16, 10, 10, 6]
+                       16, 10, 10, 15, 15, 15, 6]
 
         # 设置基本的样式
         real_side = Side(style='thin')
@@ -298,7 +305,7 @@ class Quotation(object):
 
         # 填写表头
         index = 0
-        for i in self.ws_input['A1':'V1'][0]:
+        for i in self.ws_input['A1':'Y1'][0]:
             i.value = colum_title[index]
             i.font = bold_font
             i.alignment = ctr_alignment
@@ -1455,6 +1462,271 @@ class Quotation(object):
         self.ws_training.sheet_properties.pageSetUpPr = Quotation.fitsetup
         self.ws_training.page_margins = PageMargins(left=0.25, right=0.25, top=0.75, bottom=0.75, header=0.3,
                                                     footer=0.3)
+
+    def create_isolist(self):
+        """创建三体系一览表"""
+        self.ws_isolist = self.wb.create_sheet('11.三体系一览表', -1)
+        colum_title = ['序号', '物资名称', '生产企业名称', '招标要求', '投标响应', '认证文件编号']
+        title_width = [5, 15, 25, 35, 9, 55]
+        colum_number = len(colum_title)
+        row_number = len(self.project.commodities) + 2
+
+        # 设置基本的样式
+        real_side = Side(style='thin')
+        full_border = Border(
+            left=real_side,
+            right=real_side,
+            top=real_side,
+            bottom=real_side)
+        ctr_alignment = Alignment(
+            horizontal='center',
+            vertical='center',
+            wrap_text=True)
+        bold_font = Font(name='宋体', bold=True, size=12)
+        normal_font = Font(name='宋体', size=10)
+        title_font = Font(name='黑体', bold=True, size=18)
+
+        # 初始化表格
+        for i in range(colum_number):
+            for j in range(row_number):
+                cell_now = self.ws_isolist.cell(row=j + 1, column=i + 1)
+                if j > 0:
+                    cell_now.border = full_border
+                if j > 1:
+                    cell_now.font = normal_font
+                if i == 5 and j > 1:
+                    cell_now.alignment = Alignment(
+                        horizontal='left', vertical='center', wrap_text=True)
+                else:
+                    cell_now.alignment = ctr_alignment
+        for i in range(len(title_width)):  # 修改列宽
+            self.ws_isolist.column_dimensions[
+                self.ws_isolist.cell(row=4, column=i + 1).column_letter].width = title_width[i]
+        self.ws_isolist.row_dimensions[2].height = 40
+
+        # 创建标题行
+        num = ['八', '九', '十', '十一', '十二', '十三']  # 存放中文序号
+        # 确定行数
+        row_num = 0
+        if self.project.is_cc:
+            row_num += 1
+        if self.project.is_qa:
+            row_num += 1
+        if self.project.is_tech:
+            row_num += 1
+        self.ws_isolist.merge_cells('A1:F1')
+        self.ws_isolist.merge_cells('D3:D{}'.format(row_number))
+        self.ws_isolist['A1'].font = title_font
+        self.ws_isolist['A1'].alignment = ctr_alignment
+        self.ws_isolist['A1'] = '{}.物资生产企业质量管理、环境管理和职业健康安全管理体系认证一览表'.format(num[row_num])
+        self.ws_isolist.row_dimensions[1].height = 50
+
+        # 填写表头
+        index = 0
+        for i in self.ws_isolist['A2':'F2'][0]:
+            # print(index+1, i)
+            if colum_title[index] != '':
+                i.value = colum_title[index]
+                i.font = bold_font
+            index += 1
+
+        # 填入数据
+        col_relate = [('A', 'A'), ('B', 'B'), ('C', 'K'), ('F', 'V')]
+        for row in range(3, row_number + 1):  # 遍历行
+            for col in col_relate:  # 根据对应关系设立公式
+                cell_now = self.ws_isolist['{}{}'.format(col[0], row)]
+                cell_now.value = '=物资输入!{}{}'.format(col[1], row - 1)
+            self.ws_isolist['E{}'.format(row)] = '响应'
+        re = '1. 在满足清单参数要求的前提下，鼓励本项目投标人各项物资均选用具备质量管理体系、' \
+             '环境管理体系和职业健康与安全管理体系认证的企业生产的物资。{}2. 需提交有效的管理体系认证证明文件为：' \
+             '管理体系认证证书复印件。'.format(linesep)
+        self.ws_isolist['D3'] = re
+
+        # 打印设置
+        self.ws_isolist.print_options.horizontalCentered = True
+        self.ws_isolist.print_area = 'A1:F{}'.format(row_number)
+        self.ws_isolist.page_setup.fitToWidth = 1
+        self.ws_isolist.sheet_properties.pageSetUpPr = Quotation.fitsetup
+        self.ws_isolist.page_margins = Quotation.margin
+
+    def create_conservlist(self):
+        """创建节能认证一览表"""
+        self.ws_conservlist = self.wb.create_sheet('12.节能产品一览表', -1)
+        colum_title = ['序号', '物资名称', '品牌和型号', '招标要求', '投标响应', '认证文件编号']
+        title_width = [5, 15, 25, 35, 9, 20]
+        colum_number = len(colum_title)
+        row_number = len(self.project.commodities) + 2
+
+        # 设置基本的样式
+        real_side = Side(style='thin')
+        full_border = Border(
+            left=real_side,
+            right=real_side,
+            top=real_side,
+            bottom=real_side)
+        ctr_alignment = Alignment(
+            horizontal='center',
+            vertical='center',
+            wrap_text=True)
+        bold_font = Font(name='宋体', bold=True, size=12)
+        normal_font = Font(name='宋体', size=10)
+        title_font = Font(name='黑体', bold=True, size=18)
+
+        # 初始化表格
+        for i in range(colum_number):
+            for j in range(row_number):
+                cell_now = self.ws_conservlist.cell(row=j + 1, column=i + 1)
+                if j > 0:
+                    cell_now.border = full_border
+                if j > 1:
+                    cell_now.font = normal_font
+                if i == 5 and j > 1:
+                    cell_now.alignment = Alignment(
+                        horizontal='left', vertical='center', wrap_text=True)
+                else:
+                    cell_now.alignment = ctr_alignment
+        for i in range(len(title_width)):  # 修改列宽
+            self.ws_conservlist.column_dimensions[
+                self.ws_conservlist.cell(row=4, column=i + 1).column_letter].width = title_width[i]
+        self.ws_conservlist.row_dimensions[2].height = 40
+
+        # 创建标题行
+        num = ['八', '九', '十', '十一', '十二', '十三']  # 存放中文序号
+        # 确定行数
+        row_num = 1
+        if self.project.is_cc:
+            row_num += 1
+        if self.project.is_qa:
+            row_num += 1
+        if self.project.is_tech:
+            row_num += 1
+        self.ws_conservlist.merge_cells('A1:F1')
+        self.ws_conservlist.merge_cells('D3:D{}'.format(row_number))
+        self.ws_conservlist['A1'].font = title_font
+        self.ws_conservlist['A1'].alignment = ctr_alignment
+        self.ws_conservlist['A1'] = '{}.节能产品一览表'.format(num[row_num])
+        self.ws_conservlist.row_dimensions[1].height = 50
+
+        # 填写表头
+        index = 0
+        for i in self.ws_conservlist['A2':'F2'][0]:
+            # print(index+1, i)
+            if colum_title[index] != '':
+                i.value = colum_title[index]
+                i.font = bold_font
+            index += 1
+
+        # 填入数据
+        col_relate = [('A', 'A'), ('B', 'B'), ('C', 'D'), ('F', 'W')]
+        for row in range(3, row_number + 1):  # 遍历行
+            for col in col_relate:  # 根据对应关系设立公式
+                cell_now = self.ws_conservlist['{}{}'.format(col[0], row)]
+                if col[0] == 'C':
+                    cell_now.value = "='0.物资选型一览表'!D{}".format(row)
+                else:
+                    cell_now.value = '=物资输入!{}{}'.format(col[1], row - 1)
+            self.ws_conservlist['E{}'.format(row)] = '响应'
+        re = '1. 在满足清单参数要求的前提下，鼓励本项目投标人各项物资均选用具备节能产品认证的物资。{}' \
+             '2. 需提交有效的节能产品认证证明文件为：节能产品认证证书复印件' \
+             '（提交的证书须符合《市场监管总局关于发布参与实施政府采购节能产品、环境标志产品认证机构名录的公告》' \
+             '（2019年第16号）等文件要求）。'.format(linesep)
+        self.ws_conservlist['D3'] = re
+
+        # 打印设置
+        self.ws_conservlist.print_options.horizontalCentered = True
+        self.ws_conservlist.print_area = 'A1:F{}'.format(row_number)
+        self.ws_conservlist.page_setup.fitToWidth = 1
+        self.ws_conservlist.sheet_properties.pageSetUpPr = Quotation.fitsetup
+        self.ws_conservlist.page_margins = Quotation.margin
+
+    def create_eplist(self):
+        """创建环保认证一览表"""
+        self.ws_eplist = self.wb.create_sheet('13.环境标志产品一览表', -1)
+        colum_title = ['序号', '物资名称', '品牌和型号', '招标要求', '投标响应', '认证文件编号']
+        title_width = [5, 15, 25, 35, 9, 20]
+        colum_number = len(colum_title)
+        row_number = len(self.project.commodities) + 2
+
+        # 设置基本的样式
+        real_side = Side(style='thin')
+        full_border = Border(
+            left=real_side,
+            right=real_side,
+            top=real_side,
+            bottom=real_side)
+        ctr_alignment = Alignment(
+            horizontal='center',
+            vertical='center',
+            wrap_text=True)
+        bold_font = Font(name='宋体', bold=True, size=12)
+        normal_font = Font(name='宋体', size=10)
+        title_font = Font(name='黑体', bold=True, size=18)
+
+        # 初始化表格
+        for i in range(colum_number):
+            for j in range(row_number):
+                cell_now = self.ws_eplist.cell(row=j + 1, column=i + 1)
+                if j > 0:
+                    cell_now.border = full_border
+                if j > 1:
+                    cell_now.font = normal_font
+                if i == 5 and j > 1:
+                    cell_now.alignment = Alignment(
+                        horizontal='left', vertical='center', wrap_text=True)
+                else:
+                    cell_now.alignment = ctr_alignment
+        for i in range(len(title_width)):  # 修改列宽
+            self.ws_eplist.column_dimensions[
+                self.ws_eplist.cell(row=4, column=i + 1).column_letter].width = title_width[i]
+        self.ws_eplist.row_dimensions[2].height = 40
+
+        # 创建标题行
+        num = ['八', '九', '十', '十一', '十二', '十三']  # 存放中文序号
+        # 确定行数
+        row_num = 2
+        if self.project.is_cc:
+            row_num += 1
+        if self.project.is_qa:
+            row_num += 1
+        if self.project.is_tech:
+            row_num += 1
+        self.ws_eplist.merge_cells('A1:F1')
+        self.ws_eplist.merge_cells('D3:D{}'.format(row_number))
+        self.ws_eplist['A1'].font = title_font
+        self.ws_eplist['A1'].alignment = ctr_alignment
+        self.ws_eplist['A1'] = '{}.环境标志产品一览表'.format(num[row_num])
+        self.ws_eplist.row_dimensions[1].height = 50
+
+        # 填写表头
+        index = 0
+        for i in self.ws_eplist['A2':'F2'][0]:
+            # print(index+1, i)
+            if colum_title[index] != '':
+                i.value = colum_title[index]
+                i.font = bold_font
+            index += 1
+
+        # 填入数据
+        col_relate = [('A', 'A'), ('B', 'B'), ('C', 'D'), ('F', 'X')]
+        for row in range(3, row_number + 1):  # 遍历行
+            for col in col_relate:  # 根据对应关系设立公式
+                cell_now = self.ws_eplist['{}{}'.format(col[0], row)]
+                if col[0] == 'C':
+                    cell_now.value = "='0.物资选型一览表'!D{}".format(row)
+                else:
+                    cell_now.value = '=物资输入!{}{}'.format(col[1], row - 1)
+            self.ws_eplist['E{}'.format(row)] = '响应'
+        re = '1. 在满足清单参数要求的前提下，鼓励本项目投标人各项物资均选用具备环境标志产品认证的物资。{}2.' \
+             '需提交有效的环境标志产品认证证明文件为：环境标志产品认证证书复印件（提交的证书须符合《市场监管总局关于发布参与' \
+             '实施政府采购节能产品、环境标志产品认证机构名录的公告》（2019年第16号）等文件要求）。'.format(linesep)
+        self.ws_eplist['D3'] = re
+
+        # 打印设置
+        self.ws_eplist.print_options.horizontalCentered = True
+        self.ws_eplist.print_area = 'A1:F{}'.format(row_number)
+        self.ws_eplist.page_setup.fitToWidth = 1
+        self.ws_eplist.sheet_properties.pageSetUpPr = Quotation.fitsetup
+        self.ws_eplist.page_margins = Quotation.margin
 
 
 class Content(object):
