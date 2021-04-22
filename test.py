@@ -128,7 +128,8 @@ class Quotation(object):
         self.ws_itemized_quotation = None
         self.ws_summed_quotation = None
         self.ws_general = None
-        self.col_name = ''
+        self.ws_training = None
+        self.ws_isolist = None
 
     def create_all(self):
         self.create_input()
@@ -144,12 +145,13 @@ class Quotation(object):
         self.create_itemized_quotation()
         # # self.create_summed_quotation()
         self.create_general()
+        self.create_isolist()
         self.wb.calculation = CalcProperties(iterate=True)
         self.wb.save('投标报价表-{}.xlsx'.format(self.project.name))
 
     def create_general(self):
         """创建总报价表"""
-        self.ws_general = self.wb.create_sheet('1.报价总表', 3)
+        self.ws_general = self.wb.create_sheet('1.投标报价总表', 3)
         colum_title = ['序号', '费用项目', '合计金额', '备注']
         title_width = [10, 35, 25, 20]
         colum_number = len(colum_title)
@@ -208,7 +210,7 @@ class Quotation(object):
         self.ws_general.merge_cells('A1:D1')
         self.ws_general['A1'].font = title_font
         self.ws_general['A1'].alignment = ctr_alignment
-        self.ws_general['A1'] = '1.报价总表'
+        self.ws_general['A1'] = '一.报价总表'
         self.ws_general.row_dimensions[1].height = 50
         self.ws_general['A2'] = '报价单位：人民币元'
 
@@ -242,8 +244,8 @@ class Quotation(object):
         no_seq = ['二', '三', '四']
         for i in range(5, row_number):
             self.ws_general['A{}'.format(i)] = no_seq[i - 5]
-        self.ws_general["B{}".format(row_number - 1)] = "其他费用{}（含须中方承担的其他费用、管理费、风险预涨费、" \
-                                                          "防恐措施费、大型机电设备跟踪反馈工作费用等）".format(linesep)
+        self.ws_general["B{}".format(row_number - 1)] = "其他费用{}（含须中方承担的其他费用、管理费、风险预涨费、防恐措施费、" \
+                                                        "大型机电设备跟踪反馈工作费用等）".format(linesep)
         self.ws_general['C{}'.format(row_number - 1)] = "=费用输入!J14"
         self.ws_general['B{}'.format(row_number)] = '合计'
         self.ws_general['C{}'.format(row_number)] = "=SUM(C4:C{})".format(
@@ -264,9 +266,10 @@ class Quotation(object):
         self.ws_input = self.wb.create_sheet('物资输入', 0)
         colum_title = ['序号', '品名', 'HS编码', '数量', '', '品牌', '型号', '规格', '单价',
                        '总价', '生产厂商', '供货商', '生产或供货地', '联系人',
-                       '联系电话', '出厂日期', '出口港', '检验标准', '检验机构', '交货期', '交货地点', '备注']
+                       '联系电话', '出厂日期', '出口港', '检验标准', '检验机构', '交货期', '交货地点',
+                       '三体系', '节能', '环保', '备注']
         title_width = [6, 14, 12, 3, 5, 10, 10, 30, 14, 16, 10, 10, 10, 10, 15, 10, 10, 15,
-                       16, 10, 10, 6]
+                       16, 10, 10, 15, 15, 15, 6]
 
         # 设置基本的样式
         real_side = Side(style='thin')
@@ -298,7 +301,7 @@ class Quotation(object):
 
         # 填写表头
         index = 0
-        for i in self.ws_input['A1':'V1'][0]:
+        for i in self.ws_input['A1':'Y1'][0]:
             i.value = colum_title[index]
             i.font = bold_font
             i.alignment = ctr_alignment
@@ -562,7 +565,6 @@ class Quotation(object):
             self.ws_selection['D{}'.format(row)] = \
                 '="品牌："&物资输入!F{}&CHAR(10)&"型号："&物资输入!G{}'.format(row-1, row-1)
 
-
         # 打印设置
         self.ws_selection.print_options.horizontalCentered = True
         self.ws_selection.print_area = 'A1:I{}'.format(row_number)
@@ -618,7 +620,7 @@ class Quotation(object):
                     cell_now.alignment = ctr_alignment
                 else:
                     cell_now.font = normal_font
-                if i > 1 and  j < row_number - 1:  # 格式化单元格
+                if i > 1 and j < row_number - 1:  # 格式化单元格
                     cell_now.number_format = '#,##0.00'
                     cell_now.alignment = right_alignment
                 else:
@@ -632,12 +634,12 @@ class Quotation(object):
                 self.ws_itemized_quotation.cell(row=4, column=i + 1).column_letter].width = title_width[i]
         for i in range(4, row_number + 1):  # 修改行高
             self.ws_itemized_quotation.row_dimensions[i].height = 20
-        self.ws_itemized_quotation.row_dimensions[3].height = 70
+        self.ws_itemized_quotation.row_dimensions[3].height = 60
 
         # 创建标题行
         self.ws_itemized_quotation['A1'].font = title_font
         self.ws_itemized_quotation['A1'].alignment = ctr_alignment
-        self.ws_itemized_quotation['A1'] = '2.物资对内分项报价表'
+        self.ws_itemized_quotation['A1'] = '二.物资对内分项报价表'
         self.ws_itemized_quotation.row_dimensions[1].height = 32
 
         # 第二行
@@ -873,7 +875,7 @@ class Quotation(object):
     def create_examination(self):
         """创建物资选型一览表（非法检）"""
         self.ws_examination = self.wb.create_sheet('7.非法检物资检验一览表', 3)
-        colum_title = ['序号', '品名', 'HS编码', '数量及单位', '', '品牌', '规格和型号', '金额', '生产厂商',
+        colum_title = ['序号', '品名', 'HS编码', '数量及单位', '', '品牌', '规格或型号', '金额', '生产厂商',
                        '供货商', '生产或供货地', '供货联系人及联系电话', '', '出厂日期', '出口港', '检验标准', '检验机构名称',
                        '', '', '备注']
         subcol_title = ['产地或供货地检验（查验）机构', '装运前核验机构', '口岸监装机构']
@@ -927,14 +929,15 @@ class Quotation(object):
         self.ws_examination.merge_cells('A1:T1')
         self.ws_examination['A1'].font = title_font
         self.ws_examination['A1'].alignment = ctr_alignment
-        index = 3  # 计算表格序号
+        index = 0  # 计算表格序号
         if self.project.is_tech:
             index += 1
         if self.project.is_cc:
             index += 1
         if len(self.project.qc) > 0:
             index += 1
-        self.ws_examination['A1'] = '{}.《供货清单（一）》中非法检物资检验一览表'.format(index)
+        num = ['三', '四', '五', '六', '七']
+        self.ws_examination['A1'] = '{}.非法检物资检验一览表'.format(num[index])
         self.ws_examination.row_dimensions[1].height = 30
 
         # 填写表头
@@ -1007,12 +1010,11 @@ class Quotation(object):
             start_color='FFFF00',
             end_color='FFFF00')
 
-
         # 初始化表格
         colum_number = len(colum_title)
         row_number = 14
         for i in range(colum_number):
-            for j in range(1, row_number): # 第一列留下给表头
+            for j in range(1, row_number):  # 第一列留下给表头
                 cell_now = self.ws_techserve.cell(row=j + 1, column=i + 1)
                 cell_now.border = full_border
                 cell_now.font = normal_font
@@ -1042,7 +1044,7 @@ class Quotation(object):
         self.ws_techserve.merge_cells('A1:H1')
         self.ws_techserve['A1'].font = title_font
         self.ws_techserve['A1'].alignment = ctr_alignment
-        self.ws_techserve['A1'] = '3.技术服务费报价表'
+        self.ws_techserve['A1'] = '三.技术服务费报价表'
         self.ws_techserve.row_dimensions[1].height = 40
 
         # 填写表头
@@ -1090,7 +1092,7 @@ class Quotation(object):
                 self.ws_techserve['C{}'.format(row)].number_format = '$#,##0.00'
                 self.ws_techserve['G{}'.format(row)] = '=C{0}*E{0}*F{0}'.format(row)
             if 15 > row > 7:
-                self.ws_techserve['H{}'.format(row)] = '=G{}*C16'.format(row)
+                self.ws_techserve['H{}'.format(row)] = '=G{}*C16/100'.format(row)
             if row < 11:
                 self.ws_techserve['E{}'.format(row)].number_format = '0'
                 self.ws_techserve['E{}'.format(row)] = self.project.techinfo[0]
@@ -1142,7 +1144,7 @@ class Quotation(object):
     def create_lawexam(self):
         """创建物资选型一览表（法检物资）"""
         self.ws_lawexam = self.wb.create_sheet('6.法检物资检验一览表', 3)
-        colum_title = ['序号', '品名', 'HS编码', '数量及单位', '', '品牌', '规格和型号', '金额', '生产厂商',
+        colum_title = ['序号', '品名', 'HS编码', '数量及单位', '', '品牌', '规格或型号', '金额', '生产厂商',
                        '供货商', '生产或供货地', '供货联系人及联系电话', '', '出厂日期', '供货地商检部门',
                        '出口港', '检验标准', '口岸监装机构', '备注']
         title_width = [6, 14, 12, 3, 5, 8, 30, 16, 10, 10, 6, 6, 10, 8, 6, 13, 8, 6]
@@ -1193,12 +1195,13 @@ class Quotation(object):
         self.ws_lawexam.merge_cells('A1:S1')
         self.ws_lawexam['A1'].font = title_font
         self.ws_lawexam['A1'].alignment = ctr_alignment
-        index = 3  # 计算表格序号
+        index = 0  # 计算表格序号
         if self.project.is_tech:
             index += 1
         if self.project.is_cc:
             index += 1
-        self.ws_lawexam['A1'] = '{}.《供货清单（一）》中法检物资检验一览表'.format(index)
+        num = ['三', '四', '五', '六', '七']
+        self.ws_lawexam['A1'] = '{}.法检物资检验一览表'.format(num[index])
         self.ws_lawexam.row_dimensions[1].height = 30
 
         # 填写表头
@@ -1315,10 +1318,11 @@ class Quotation(object):
         # 创建标题行
         self.ws_training['A1'].font = title_font
         self.ws_training['A1'].alignment = ctr_alignment
-        index = 3
+        index = 0
         if self.project.is_tech:
             index += 1
-        self.ws_training['A1'] = '{}.来华培训费报价表'.format(index)
+        num = ['三', '四', '五', '六', '七']
+        self.ws_training['A1'] = '{}.来华培训费报价表'.format(num[index])
         self.ws_training.row_dimensions[1].height = 30
         self.ws_training.merge_cells('A1:H1')
 
@@ -1349,6 +1353,7 @@ class Quotation(object):
             self.ws_training['B{}'.format(index)] = col_b[index - 4]
         self.ws_training['C15'].value = '伙食费'
         self.ws_training['C16'].value = '住宿费'
+
         # 填写E列
         for num in range(6, 13):  # 填写培训人数
             self.ws_training['E{}'.format(num)].number_format = '0'
@@ -1368,6 +1373,7 @@ class Quotation(object):
         self.ws_training['E15'].value = res
         self.ws_training['E16'].number_format = '0'
         self.ws_training['E16'].value = '=E15'
+
         # 填写D列
         for num in [4, 6, 7, 9, 15, 16]:
             self.ws_training['D{}'.format(num)].number_format = '0"元/人*天"'
@@ -1403,7 +1409,6 @@ class Quotation(object):
         else:
             self.ws_training['F8'] = 1
             self.ws_training['F10'] = 1
-
 
         # 填写G列
         for i in range(4, 18):
@@ -1454,9 +1459,95 @@ class Quotation(object):
         self.ws_training.page_margins = PageMargins(left=0.25, right=0.25, top=0.75, bottom=0.75, header=0.3,
                                                     footer=0.3)
 
+    def create_isolist(self):
+        """创建三体系一览表"""
+        self.ws_isolist = self.wb.create_sheet('11.三体系一览表', -1)
+        colum_title = ['序号', '物资名称', '生产企业名称', '招标要求', '投标响应', '认证文件编号']
+        title_width = [5, 15, 25, 35, 9, 55]
+        colum_number = len(colum_title)
+        row_number = len(self.project.commodities) + 2
+
+        # 设置基本的样式
+        real_side = Side(style='thin')
+        full_border = Border(
+            left=real_side,
+            right=real_side,
+            top=real_side,
+            bottom=real_side)
+        ctr_alignment = Alignment(
+            horizontal='center',
+            vertical='center',
+            wrap_text=True)
+        bold_font = Font(name='宋体', bold=True, size=12)
+        normal_font = Font(name='宋体', size=10)
+        title_font = Font(name='黑体', bold=True, size=18)
+
+        # 初始化表格
+        for i in range(colum_number):
+            for j in range(row_number):
+                cell_now = self.ws_isolist.cell(row=j + 1, column=i + 1)
+                if j > 0:
+                    cell_now.border = full_border
+                if j > 1:
+                    cell_now.font = normal_font
+                if i == 5 and j > 1:
+                    cell_now.alignment = Alignment(
+                        horizontal='left', vertical='center', wrap_text=True)
+                else:
+                    cell_now.alignment = ctr_alignment
+        for i in range(len(title_width)):  # 修改列宽
+            self.ws_isolist.column_dimensions[
+                self.ws_isolist.cell(row=4, column=i + 1).column_letter].width = title_width[i]
+        self.ws_isolist.row_dimensions[2].height = 40
+
+        # 创建标题行
+        num = ['八', '九', '十', '十一', '十二', '十三']  # 存放中文序号
+        # 确定行数
+        row_num = 0
+        if self.project.is_cc:
+            row_num += 1
+        if self.project.is_qa:
+            row_num += 1
+        if self.project.is_tech:
+            row_num += 1
+        self.ws_isolist.merge_cells('A1:F1')
+        self.ws_isolist.merge_cells('D3:D{}'.format(row_number))
+        self.ws_isolist['A1'].font = title_font
+        self.ws_isolist['A1'].alignment = ctr_alignment
+        self.ws_isolist['A1'] = '{}.物资生产企业质量管理、环境管理和职业健康安全管理体系认证一览表'.format(num[row_num])
+        self.ws_isolist.row_dimensions[1].height = 50
+
+        # 填写表头
+        index = 0
+        for i in self.ws_isolist['A2':'F2'][0]:
+            # print(index+1, i)
+            if colum_title[index] != '':
+                i.value = colum_title[index]
+                i.font = bold_font
+            index += 1
+
+        # 填入数据
+        col_relate = [('A', 'A'), ('B', 'B'), ('C', 'K'), ('F', 'V')]
+        for row in range(3, row_number + 1):  # 遍历行
+            for col in col_relate:  # 根据对应关系设立公式
+                cell_now = self.ws_isolist['{}{}'.format(col[0], row)]
+                cell_now.value = '=物资输入!{}{}'.format(col[1], row - 1)
+            self.ws_isolist['E{}'.format(row)] = '响应'
+        re = '1. 在满足清单参数要求的前提下，鼓励本项目投标人各项物资均选用具备质量管理体系、' \
+             '环境管理体系和职业健康与安全管理体系认证的企业生产的物资。{}2. 需提交有效的管理体系认证证明文件为：' \
+             '管理体系认证证书复印件。'.format(linesep)
+        self.ws_isolist['D3'] = re
+
+        # 打印设置
+        self.ws_isolist.print_options.horizontalCentered = True
+        self.ws_isolist.print_area = 'A1:F{}'.format(row_number)
+        self.ws_isolist.page_setup.fitToWidth = 1
+        self.ws_isolist.sheet_properties.pageSetUpPr = Quotation.fitsetup
+        self.ws_isolist.page_margins = Quotation.margin
 
 
-my_p = Project("project.docx")
-my_q = Quotation(my_p)
-my_q.create_all()
+myproject = Project('project.docx')
+myquota = Quotation(myproject)
+myquota.create_all()
+
 

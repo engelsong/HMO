@@ -102,7 +102,7 @@ class Project(object):
         if len(self.qc) > 0:
             print('法检物资：', self.qc)
 
-    def show_commoditiy(self):
+    def show_commodity(self):
         temp_list = sorted(list(self.commodities.keys()))
         for i in temp_list:
             print(i)
