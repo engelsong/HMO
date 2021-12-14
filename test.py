@@ -38,7 +38,7 @@ class Project(object):
         self.trans = None
         self.totalsum = 0
         self.is_lowprice = False  # 是否为低价法
-        self.sec_comlist = False
+        self.sec_comlist = False  # 是否有供货清单二
         self.is_tech = False  # 是否有技术服务
         self.is_qa = False  # 是否有售后
         self.is_cc = False  # 是否来华培训
@@ -47,8 +47,10 @@ class Project(object):
         self.training_num = 0  # 来华培训人数
         self.qc = []  # 法检物资序号
         self.commodities = {}  # 存放物资信息字典
+        self.commodities2 = {}  # 存放供货清单二物资
         document = Document(document_name)
-        table1, table2 = document.tables  # 读取两个表格
+        table1 = document.tables[0]
+        table2 = document.tables[1]  # 读取两个表格
         project_info = []
         for cell in table1.column_cells(1):
             project_info.append(cell.text)
@@ -68,6 +70,24 @@ class Project(object):
             self.is_lowprice = True
         if project_info[7] in 'yY':
             self.sec_comlist = True
+            table3 = document.tables[2]
+            self.commodities2 = {}  # 存放供货清单二物资
+            # 读取供货清单二
+            table3_length = len(table3.rows)
+            for index in range(1, table3_length):  # 从第2行开始读取表格
+                temp = []
+                row_now = table3.row_cells(index)
+                length_row = len(row_now)
+                for i in range(1, length_row - 1):  # 将每行信息放入暂存数组
+                    temp.append(row_now[i].text)
+                price = ''
+                for d in row_now[length_row - 1].text:
+                    if d.isdigit() or d == '.':
+                        price += d
+                temp.append(float(price))  # 将金额转换为float
+                temp.append(row_now[0].text)  # 把物资编号放在最后一位
+                self.commodities2[index] = temp
+
         if project_info[8] in 'yY':
             self.is_tech = True
             self.techinfo += list(map(int, project_info[9:11]))
@@ -78,8 +98,9 @@ class Project(object):
             self.training_days = int(project_info[14])  # 读取来华陪训天数
             self.training_num = int(project_info[13])  # 读取来华培训人数
         if project_info[-1] != '':
-            self.qc += list(map(int, project_info[-1].split()))
-            self.qc.sort()
+            if project_info[-1] not in 'Nn':
+                self.qc += list(map(int, project_info[-1].split()))
+                self.qc.sort()
 
     def show_info(self):
         print('项目名称:', self.name)
@@ -107,6 +128,13 @@ class Project(object):
         for i in temp_list:
             print(i)
             for j in self.commodities[i]:
+                print(j)
+
+    def show_commodity2(self):
+        temp_list = sorted(list(self.commodities2.keys()))
+        for i in temp_list:
+            print(i)
+            for j in self.commodities2[i]:
                 print(j)
 
 
@@ -1730,7 +1758,6 @@ class Quotation(object):
 
 
 myproject = Project('project.docx')
-myquota = Quotation(myproject)
-myquota.create_all()
-
-
+# myquota = Quotation(myproject)
+# myquota.create_all()
+myproject.show_commodity2()

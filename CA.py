@@ -38,7 +38,7 @@ class Project(object):
         self.trans = None
         self.totalsum = 0
         self.is_lowprice = False  # 是否为低价法
-        self.sec_comlist = False
+        self.sec_comlist = False  # 是否有供货清单二
         self.is_tech = False  # 是否有技术服务
         self.is_qa = False  # 是否有售后
         self.is_cc = False  # 是否来华培训
@@ -47,8 +47,10 @@ class Project(object):
         self.training_num = 0  # 来华培训人数
         self.qc = []  # 法检物资序号
         self.commodities = {}  # 存放物资信息字典
+        self.commodities2 = {}  # 存放供货清单二物资
         document = Document(document_name)
-        table1, table2 = document.tables  # 读取两个表格
+        table1 = document.tables[0]
+        table2 = document.tables[1]  # 读取两个表格
         project_info = []
         for cell in table1.column_cells(1):
             project_info.append(cell.text)
@@ -68,6 +70,24 @@ class Project(object):
             self.is_lowprice = True
         if project_info[7] in 'yY':
             self.sec_comlist = True
+            table3 = document.tables[2]
+            self.commodities2 = {}  # 存放供货清单二物资
+            # 读取供货清单二
+            table3_length = len(table3.rows)
+            for index in range(1, table3_length):  # 从第2行开始读取表格
+                temp = []
+                row_now = table3.row_cells(index)
+                length_row = len(row_now)
+                for i in range(1, length_row - 1):  # 将每行信息放入暂存数组
+                    temp.append(row_now[i].text)
+                price = ''
+                for d in row_now[length_row - 1].text:
+                    if d.isdigit() or d == '.':
+                        price += d
+                temp.append(float(price))  # 将金额转换为float
+                temp.append(row_now[0].text)  # 把物资编号放在最后一位
+                self.commodities2[index] = temp
+
         if project_info[8] in 'yY':
             self.is_tech = True
             self.techinfo += list(map(int, project_info[9:11]))
@@ -78,8 +98,9 @@ class Project(object):
             self.training_days = int(project_info[14])  # 读取来华陪训天数
             self.training_num = int(project_info[13])  # 读取来华培训人数
         if project_info[-1] != '':
-            self.qc += list(map(int, project_info[-1].split()))
-            self.qc.sort()
+            if project_info[-1] not in 'Nn':
+                self.qc += list(map(int, project_info[-1].split()))
+                self.qc.sort()
 
     def show_info(self):
         print('项目名称:', self.name)
@@ -107,6 +128,13 @@ class Project(object):
         for i in temp_list:
             print(i)
             for j in self.commodities[i]:
+                print(j)
+
+    def show_commodity2(self):
+        temp_list = sorted(list(self.commodities2.keys()))
+        for i in temp_list:
+            print(i)
+            for j in self.commodities2[i]:
                 print(j)
 
 
@@ -214,7 +242,7 @@ class Quotation(object):
         self.ws_general.merge_cells('A1:D1')
         self.ws_general['A1'].font = title_font
         self.ws_general['A1'].alignment = ctr_alignment
-        self.ws_general['A1'] = '一.报价总表'
+        self.ws_general['A1'] = '一.投标报价总表'
         self.ws_general.row_dimensions[1].height = 50
         self.ws_general['A2'] = '报价单位：人民币元'
 
@@ -941,7 +969,7 @@ class Quotation(object):
         if len(self.project.qc) > 0:
             index += 1
         num = ['三', '四', '五', '六', '七']
-        self.ws_examination['A1'] = '{}.非法检物资检验一览表'.format(num[index])
+        self.ws_examination['A1'] = '{}.《供货清单（一）》中非法检物资检验一览表'.format(num[index])
         self.ws_examination.row_dimensions[1].height = 30
 
         # 填写表头
@@ -1205,7 +1233,7 @@ class Quotation(object):
         if self.project.is_cc:
             index += 1
         num = ['三', '四', '五', '六', '七']
-        self.ws_lawexam['A1'] = '{}.法检物资检验一览表'.format(num[index])
+        self.ws_lawexam['A1'] = '{}.《供货清单（一）》中法检物资检验一览表'.format(num[index])
         self.ws_lawexam.row_dimensions[1].height = 30
 
         # 填写表头
@@ -2244,6 +2272,7 @@ class Cover(object):
 
 def separate_wb():
     wb_pattern = re.compile('^投标报价表\-?[\w\S]*(\.xlsx)$')
+    filename = None
     for doc in listdir():
         if re.match(wb_pattern, doc):
             filename = doc
@@ -2253,6 +2282,7 @@ def separate_wb():
     for sheet in my_wb:
         if re.match(sheet_pattern, sheet.title):
             name_list.append(sheet.title)
+    my_wb.close()
     for name in name_list:
         wb_now = load_workbook(filename, data_only=True)
         ws_now = wb_now[name]
@@ -2260,6 +2290,7 @@ def separate_wb():
             if sheet.title != ws_now.title:
                 wb_now.remove(sheet)
         wb_now.save('{}.xlsx'.format(name))
+        wb_now.close()
 
 
 def make_dir():
