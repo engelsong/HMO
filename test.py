@@ -79,7 +79,17 @@ class Project(object):
                 row_now = table3.row_cells(index)
                 length_row = len(row_now)
                 for i in range(1, length_row - 1):  # 将每行信息放入暂存数组
-                    temp.append(row_now[i].text)
+                    if i == 6:
+                        amount = ''
+                        the_unit = ''
+                        for d in row_now[i].text:
+                            if d.isdigit():
+                                amount += d
+                        the_unit = row_now[i].text.replace(amount, '')
+                        temp.append(amount)
+                        temp.append(the_unit)
+                    else:
+                        temp.append(row_now[i].text)
                 price = ''
                 for d in row_now[length_row - 1].text:
                     if d.isdigit() or d == '.':
@@ -133,9 +143,9 @@ class Project(object):
     def show_commodity2(self):
         temp_list = sorted(list(self.commodities2.keys()))
         for i in temp_list:
-            print(i)
-            for j in self.commodities2[i]:
-                print(j)
+            print(self.commodities2[i])
+            # for j in self.commodities2[i]:
+            #     print(j)
 
 
 class Quotation(object):
@@ -163,21 +173,21 @@ class Quotation(object):
 
     def create_all(self):
         self.create_input()
-        self.create_cost()
-        self.create_selection()
-        self.create_examination()
-        if len(self.project.qc) > 0:
-            self.create_lawexam()
-        if self.project.is_cc:
-            self.create_training()
-        if self.project.is_tech:
-            self.create_techserve()
-        self.create_itemized_quotation()
-        # # self.create_summed_quotation()
-        self.create_general()
-        self.create_isolist()
-        self.create_conservlist()
-        self.create_eplist()
+        # self.create_cost()
+        # self.create_selection()
+        # self.create_examination()
+        # if len(self.project.qc) > 0:
+        #     self.create_lawexam()
+        # if self.project.is_cc:
+        #     self.create_training()
+        # if self.project.is_tech:
+        #     self.create_techserve()
+        # self.create_itemized_quotation()
+        # # # self.create_summed_quotation()
+        # self.create_general()
+        # self.create_isolist()
+        # self.create_conservlist()
+        # self.create_eplist()
         self.wb.calculation = CalcProperties(iterate=True)
         self.wb.save('投标报价表-{}.xlsx'.format(self.project.name))
 
@@ -319,9 +329,9 @@ class Quotation(object):
 
         # 初始化表格
         colum_number = len(colum_title)
-        row_number = len(self.project.commodities) + 1
+        row_number_total = len(self.project.commodities) + len(self.project.commodities2) + 2
         for i in range(colum_number):
-            for j in range(row_number):
+            for j in range(row_number_total):
                 cell_now = self.ws_input.cell(row=j + 1, column=i + 1)
                 cell_now.border = full_border
                 cell_now.font = normal_font
@@ -339,7 +349,8 @@ class Quotation(object):
             i.alignment = ctr_alignment
             index += 1
 
-        # 填写物资数据
+        # 填写供货清单一的物资数据
+        row_number = len(self.project.commodities) + 1
         relate_coord = [('B', 0), ('C', 1), ('D', 2), ('R', 5)]
         for num in range(2, row_number + 1):
             if self.project.commodities[num - 1][-1] == '':
@@ -359,8 +370,21 @@ class Quotation(object):
                 self.ws_input['E{}'.format(num)] = int(
                     self.project.commodities[num - 1][3])
             self.ws_input['J{}'.format(num)] = '=E{}*I{}'.format(num, num)
-        # self.wb.save('sample.xlsx')
 
+        # 填写供货清单二的物资数据
+        relate_coord2 = [('B', 0), ('C', 1), ('K', 2), ('L', 2), ('F', 3), ('H', 4), ('D', 6), ('E', 5), ('J', -2),
+                         ('A', -1), ('R', -4)]
+        for num in range(row_number + 2, row_number_total + 1):
+            num_now = num - row_number - 1
+            self.ws_input['I{}'.format(num)].number_format = '¥#,##0.00'
+            # self.ws_input['H{}'.format(num)].value = 1
+            self.ws_input['J{}'.format(num)].number_format = '¥#,##0.00'
+            self.ws_input['Y{}'.format(num)] = '-'
+            self.ws_input['E{}'.format(num)].number_format = '0'
+            for rela in relate_coord2:
+                self.ws_input['{}{}'.format(
+                    rela[0], num)] = self.project.commodities2[num_now][rela[1]]
+        self.ws_input.merge_cells('A{}:Y{}'.format(row_number + 1, row_number + 1))
         self.ws_input.merge_cells('D1:E1')
 
     def create_cost(self):
@@ -664,7 +688,7 @@ class Quotation(object):
         for i in range(len(title_width)):  # 修改列宽
             self.ws_itemized_quotation.column_dimensions[
                 self.ws_itemized_quotation.cell(row=4, column=i + 1).column_letter].width = title_width[i]
-        for i in range(4, row_number + 1):  # 修改行高
+        for i in range(2, row_number + 1):  # 修改行高
             self.ws_itemized_quotation.row_dimensions[i].height = 20
         self.ws_itemized_quotation.row_dimensions[3].height = 60
 
@@ -1758,6 +1782,6 @@ class Quotation(object):
 
 
 myproject = Project('project.docx')
-# myquota = Quotation(myproject)
-# myquota.create_all()
+myquota = Quotation(myproject)
+myquota.create_all()
 myproject.show_commodity2()
