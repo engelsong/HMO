@@ -173,21 +173,21 @@ class Quotation(object):
 
     def create_all(self):
         self.create_input()
-        # self.create_cost()
-        # self.create_selection()
-        # self.create_examination()
-        # if len(self.project.qc) > 0:
-        #     self.create_lawexam()
-        # if self.project.is_cc:
-        #     self.create_training()
-        # if self.project.is_tech:
-        #     self.create_techserve()
-        # self.create_itemized_quotation()
-        # # # self.create_summed_quotation()
-        # self.create_general()
-        # self.create_isolist()
-        # self.create_conservlist()
-        # self.create_eplist()
+        self.create_cost()
+        self.create_selection()
+        self.create_examination()
+        if len(self.project.qc) > 0:
+            self.create_lawexam()
+        if self.project.is_cc:
+            self.create_training()
+        if self.project.is_tech:
+            self.create_techserve()
+        self.create_itemized_quotation()
+        # self.create_summed_quotation()
+        self.create_general()
+        self.create_isolist()
+        self.create_conservlist()
+        self.create_eplist()
         self.wb.calculation = CalcProperties(iterate=True)
         self.wb.save('投标报价表-{}.xlsx'.format(self.project.name))
 
@@ -329,7 +329,7 @@ class Quotation(object):
 
         # 初始化表格
         colum_number = len(colum_title)
-        row_number_total = len(self.project.commodities) + len(self.project.commodities2) + 2
+        row_number_total = len(self.project.commodities) + len(self.project.commodities2) + 1
         for i in range(colum_number):
             for j in range(row_number_total):
                 cell_now = self.ws_input.cell(row=j + 1, column=i + 1)
@@ -374,8 +374,8 @@ class Quotation(object):
         # 填写供货清单二的物资数据
         relate_coord2 = [('B', 0), ('C', 1), ('K', 2), ('L', 2), ('F', 3), ('H', 4), ('D', 6), ('E', 5), ('J', -2),
                          ('A', -1), ('R', -4)]
-        for num in range(row_number + 2, row_number_total + 1):
-            num_now = num - row_number - 1
+        for num in range(row_number + 1, row_number_total + 1):
+            num_now = num - row_number
             self.ws_input['I{}'.format(num)].number_format = '¥#,##0.00'
             # self.ws_input['H{}'.format(num)].value = 1
             self.ws_input['J{}'.format(num)].number_format = '¥#,##0.00'
@@ -384,7 +384,7 @@ class Quotation(object):
             for rela in relate_coord2:
                 self.ws_input['{}{}'.format(
                     rela[0], num)] = self.project.commodities2[num_now][rela[1]]
-        self.ws_input.merge_cells('A{}:Y{}'.format(row_number + 1, row_number + 1))
+        # self.ws_input.merge_cells('A{}:Y{}'.format(row_number + 1, row_number + 1))
         self.ws_input.merge_cells('D1:E1')
 
     def create_cost(self):
@@ -634,10 +634,13 @@ class Quotation(object):
         colum_title = ['物资', '', '商品购买价款', '国内运杂费', '包装费', '保管费', '物资检验费', '运输保险费', '国外运费',
                        '资金占用成本', '合理利润', '税金',
                        '合计（即《供货清单（一）》各项物资{}总价)'.format(self.project.trans)]
+        if self.project.sec_comlist:
+            colum_title[-1] = '合计（即《供货清单（一）》各项物资{}总价和《供货清单（二）》' \
+                              '各项物资流通费用总价)'.format(self.project.trans)
 
-        title_width = [8, 15, 14, 10, 10, 10, 10, 10, 10, 10, 10, 10, 16]
+        title_width = [8, 16, 14, 10, 10, 10, 16, 16, 16, 16, 16, 16, 20]
         colum_number = len(colum_title)
-        row_number = len(self.project.commodities) + 6
+        row_number = len(self.project.commodities) + len(self.project.commodities2) + 6
 
         # 设置基本的样式
         real_side = Side(style='thin')
@@ -646,12 +649,15 @@ class Quotation(object):
             right=real_side,
             top=real_side,
             bottom=real_side)
+        slash_border = Border(diagonal=real_side, diagonalDown=True, left=real_side, right=real_side,
+                              top=real_side, bottom=real_side)
         ctr_alignment = Alignment(
             horizontal='center',
             vertical='center',
             wrap_text=True)
         bold_font = Font(name='宋体', bold=True, size=12)
         normal_font = Font(name='宋体', size=12)
+        normal_white_font = Font(name='宋体', color='FFFFFF', size=12)
         title_font = Font(name='黑体', size=14)
         right_alignment = Alignment(
             horizontal='right',
@@ -661,10 +667,10 @@ class Quotation(object):
             horizontal='left',
             vertical='center',
             wrap_text=False)
-        yellow_fill = PatternFill(
-            fill_type='solid',
-            start_color='FFFF00',
-            end_color='FFFF00')
+        # yellow_fill = PatternFill(
+        #     fill_type='solid',
+        #     start_color='FFFF00',
+        #     end_color='FFFF00')
 
         # 初始化表格
         for i in range(colum_number):
@@ -688,7 +694,7 @@ class Quotation(object):
         for i in range(len(title_width)):  # 修改列宽
             self.ws_itemized_quotation.column_dimensions[
                 self.ws_itemized_quotation.cell(row=4, column=i + 1).column_letter].width = title_width[i]
-        for i in range(2, row_number + 1):  # 修改行高
+        for i in range(4, row_number + 1):  # 修改行高
             self.ws_itemized_quotation.row_dimensions[i].height = 20
         self.ws_itemized_quotation.row_dimensions[3].height = 60
 
@@ -702,7 +708,7 @@ class Quotation(object):
         self.ws_itemized_quotation['A2'].font = normal_font
         self.ws_itemized_quotation['A2'].alignment = left_alignment
         self.ws_itemized_quotation['A2'] = '报价单位：人民币元'
-        self.ws_itemized_quotation.row_dimensions[1].height = 20
+        self.ws_itemized_quotation.row_dimensions[2].height = 20
 
         # 填写表头
         index = 0
@@ -713,17 +719,22 @@ class Quotation(object):
             index += 1
 
         # 填写数据
-        self.ws_itemized_quotation['A{}'.format(row_number - 1)] = '注：'
-        self.ws_itemized_quotation['B{}'.format(row_number - 1)] = '1.资金占用成本=（商品进价成本+物资检验费+保险费' \
-                                                                   '+国外运费）×3%利率×预计占用3个月/12个月'
-        self.ws_itemized_quotation['B{}'.format(row_number)] = '2.税金=[对内总承包价/（1+增值税税率）]' \
-                                                               'X增值税税率-当期进项税款'
-        self.ws_itemized_quotation['B{}'.format(row_number - 1)].fill = yellow_fill
-        self.ws_itemized_quotation['B{}'.format(row_number)].fill = yellow_fill
+        # self.ws_itemized_quotation['A{}'.format(row_number - 1)] = '注：'
+        # self.ws_itemized_quotation['B{}'.format(row_number - 1)] = '1.资金占用成本=（商品进价成本+物资检验费+保险费' \
+        #                                                            '+国外运费）×3%利率×预计占用3个月/12个月'
+        # self.ws_itemized_quotation['B{}'.format(row_number)] = '2.税金=[对内总承包价/（1+增值税税率）]' \
+        #                                                        'X增值税税率-当期进项税款'
+        # self.ws_itemized_quotation['B{}'.format(row_number - 1)].fill = yellow_fill
+        # self.ws_itemized_quotation['B{}'.format(row_number)].fill = yellow_fill
         self.ws_itemized_quotation['B{}'.format(row_number - 2)] = '小计'
         self.ws_itemized_quotation['A4'] = '供货清单（一）'
+        if self.project.sec_comlist:
+            self.ws_itemized_quotation['A{}'.format(len(self.project.commodities) + 4)] = '供货清单（二）'
 
         # col_relate = [('A', 'A'), ('B', 'B'), ('C', 'J')]
+        row_sum = row_number - 2
+        if self.project.sec_comlist:
+            row_sum = row_number
         for row in range(4, row_number - 2):
             # for col in col_relate:  # 根据对应关系设立公式
             self.ws_itemized_quotation['C{}'.format(row)] = '=物资输入!J{}'.format(row - 2)
@@ -732,42 +743,47 @@ class Quotation(object):
             self.ws_itemized_quotation['E{}'.format(row)] = 0
             self.ws_itemized_quotation['F{}'.format(row)] = 0
             self.ws_itemized_quotation['G{}'.format(
-                row)] = '=round(C{0}/C{1}*G{1},2)'.format(row, row_number - 2)
+                row)] = '=round(C{0}/C{1}*G{2},2)'.format(row, row_sum, row_number)
             self.ws_itemized_quotation['H{}'.format(
-                row)] = '=round(C{0}/C{1}*H{1},2)'.format(row, row_number - 2)
+                row)] = '=round(C{0}/C{1}*H{2},2)'.format(row, row_sum, row_number)
             self.ws_itemized_quotation['I{}'.format(
-                row)] = '=round(C{0}/C{1}*I{1},2)'.format(row, row_number - 2)
+                row)] = '=round(C{0}/C{1}*I{2},2)'.format(row, row_sum, row_number)
             self.ws_itemized_quotation['J{}'.format(
-                row)] = '=round(C{0}/C{1}*J{1},2)'.format(row, row_number - 2)
+                row)] = '=round(C{0}/C{1}*J{2},2)'.format(row, row_sum, row_number)
             self.ws_itemized_quotation['K{}'.format(
-                row)] = '=round(C{0}/C{1}*K{1},2)'.format(row, row_number - 2)
+                row)] = '=round(C{0}/C{1}*K{2},2)'.format(row, row_sum, row_number)
             self.ws_itemized_quotation['L{}'.format(
-                row)] = '=round(C{0}/C{1}*L{1},2)'.format(row, row_number - 2)
-            self.ws_itemized_quotation['M{}'.format(
-                row)] = '=SUM(C{0}:L{0})'.format(row)
-        self.ws_itemized_quotation['C{}'.format(
-            row_number - 2)] = '=SUM(C3:C{})'.format(row_number - 3)
-        self.ws_itemized_quotation['D{}'.format(
-            row_number - 2)] = '=SUM(D3:D{})'.format(row_number - 3)
-        self.ws_itemized_quotation['E{}'.format(
-            row_number - 2)] = '=SUM(E3:E{})'.format(row_number - 3)
-        self.ws_itemized_quotation['F{}'.format(
-            row_number - 2)] = '=SUM(F3:F{})'.format(row_number - 3)
-        self.ws_itemized_quotation['G{}'.format(row_number - 2)] = '=费用输入!J15'
-        self.ws_itemized_quotation['H{}'.format(row_number - 2)] = '=费用输入!J18'
-        self.ws_itemized_quotation['I{}'.format(row_number - 2)] = '=费用输入!J9'
-        self.ws_itemized_quotation['K{}'.format(row_number - 2)] = '=费用输入!J13'
-        self.ws_itemized_quotation['L{}'.format(row_number - 2)] = \
-            '=round((M{0}/1.13*0.13-C{0}/1.13*0.13-G{0}/1.06*0.06),2)'.format(
-                row_number - 2)
+                row)] = '=round(C{0}/C{1}*L{2},2)'.format(row, row_sum, row_number)
+            if row < len(self.project.commodities) + 4:
+                self.ws_itemized_quotation['M{}'.format(row)] = '=SUM(C{0}:L{0})'.format(row)
+            else:
+                self.ws_itemized_quotation['M{}'.format(row)] = '=SUM(D{0}:L{0})'.format(row)
+        for column in 'DEFGHIJKLM':
+            self.ws_itemized_quotation['{}{}'.format(column, row_number - 2)]\
+                = '=SUM({0}4:{0}{1})'.format(column, row_number - 3)
+        self.ws_itemized_quotation['C{}'.format(row_number - 2)]\
+            = '=SUM(C4:C{})'.format(len(self.project.commodities) + 3)
+
+        self.ws_itemized_quotation['G{}'.format(row_number)] = '=费用输入!J15'
+        self.ws_itemized_quotation['H{}'.format(row_number)] = '=费用输入!J18'
+        self.ws_itemized_quotation['I{}'.format(row_number)] = '=费用输入!J9'
+        self.ws_itemized_quotation['K{}'.format(row_number)] = '=费用输入!J13'
+        self.ws_itemized_quotation['L{}'.format(row_number)] = \
+            "=ROUND((C{}+'1.投标报价总表'!C7)*0.0003,2)".format(row_number - 2)
         self.ws_itemized_quotation['M{}'.format(
-            row_number - 2)] = '=SUM(C{0}:L{0})'.format(row_number - 2)
-        self.ws_itemized_quotation['J{}'.format(row_number - 2)] = \
-            '=round(SUM(C{0}:I{0})*3/12*0.03,2)'.format(row_number - 2)
-        self.ws_itemized_quotation['J{}'.format(
-            row_number - 2)].fill = yellow_fill
-        self.ws_itemized_quotation['N{}'.format(
-            row_number - 2)] = '=SUM(M4:M{})'.format(row_number - 3)
+            row_number)] = '=SUM(C{0}:L{0})'.format(row_number - 2)
+        self.ws_itemized_quotation['J{}'.format(row_number)] = \
+            '=round(SUM(C{0}:I{0})*3/12*0.0435,2)'.format(row_number - 2)
+        if self.project.sec_comlist:
+            self.ws_itemized_quotation['C{}'.format(row_number)] = '=SUM(C4:C{})'.format(row_number - 3)
+            for row in range(len(self.project.commodities) + 4, row_number - 2):
+                self.ws_itemized_quotation['C{}'.format(row)].font = normal_white_font
+                self.ws_itemized_quotation['C{}'.format(row)].border = slash_border
+
+        # self.ws_itemized_quotation['J{}'.format(
+        #     row_number - 2)].fill = yellow_fill
+        # self.ws_itemized_quotation['N{}'.format(
+        #     row_number - 2)] = '=SUM(M4:M{})'.format(row_number - 3)
 
         # # 低价项目针对部分单元格进行修改
         # if self.project.is_lowprice:
@@ -790,26 +806,28 @@ class Quotation(object):
         #             row_number - 3)
 
         # 增加条件格式判断
-        red_fill = PatternFill(
-            start_color='EE1111',
-            end_color='EE1111',
-            fill_type='solid')
-        self.ws_itemized_quotation.conditional_formatting.add('N{}'.format(row_number - 2), CellIsRule(
-            operator='notEqual', formula=['M{}'.format(row_number - 2)], fill=red_fill))
+        # red_fill = PatternFill(
+        #     start_color='EE1111',
+        #     end_color='EE1111',
+        #     fill_type='solid')
+        # self.ws_itemized_quotation.conditional_formatting.add('N{}'.format(row_number - 2), CellIsRule(
+        #     operator='notEqual', formula=['M{}'.format(row_number - 2)], fill=red_fill))
 
         # 合并需要合并单元格
         self.ws_itemized_quotation.merge_cells('A1:M1')
-        self.ws_itemized_quotation.merge_cells(
-            'B{0}:M{0}'.format(row_number - 1))
+        # self.ws_itemized_quotation.merge_cells('B{0}:M{0}'.format(row_number - 1))
         # self.ws_itemized_quotation.merge_cells(
         #     'B{0}:M{0}'.format(row_number - 2))
-        self.ws_itemized_quotation.merge_cells('B{0}:M{0}'.format(row_number))
-        self.ws_itemized_quotation.merge_cells('A4:A{}'.format(row_number - 3))
+        # self.ws_itemized_quotation.merge_cells('B{0}:M{0}'.format(row_number))
+        self.ws_itemized_quotation.merge_cells('A4:A{}'.format(len(self.project.commodities) + 3))
+        if self.project.sec_comlist:
+            self.ws_itemized_quotation.merge_cells('A{}:A{}'.format(len(self.project.commodities) + 4, row_number - 3))
+
         self.ws_itemized_quotation.merge_cells('A3:B3')
 
         # 打印设置
         self.ws_itemized_quotation.print_options.horizontalCentered = True
-        self.ws_itemized_quotation.print_area = 'A1:M{}'.format(row_number)
+        self.ws_itemized_quotation.print_area = 'A1:M{}'.format(row_number - 2)
         self.ws_itemized_quotation.page_setup.fitToWidth = 1
         self.ws_itemized_quotation.page_setup.orientation = "landscape"
         self.ws_itemized_quotation.page_margins = PageMargins(left=0.25, right=0.25, top=0.75, bottom=0.75, header=0.3,
@@ -1784,4 +1802,4 @@ class Quotation(object):
 myproject = Project('project.docx')
 myquota = Quotation(myproject)
 myquota.create_all()
-myproject.show_commodity2()
+# myproject.show_commodity2()
