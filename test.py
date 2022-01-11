@@ -164,6 +164,7 @@ class Quotation(object):
         self.ws_techserve = None
         self.ws_selection = None
         self.ws_itemized_quotation = None
+        self.ws_tax_refund = None
         self.ws_summed_quotation = None
         self.ws_general = None
         self.ws_training = None
@@ -182,6 +183,7 @@ class Quotation(object):
             self.create_training()
         if self.project.is_tech:
             self.create_techserve()
+        self.create_tax_refund()
         self.create_itemized_quotation()
         # self.create_summed_quotation()
         self.create_general()
@@ -274,13 +276,13 @@ class Quotation(object):
         self.ws_general['A5'] = "二"
 
         if self.project.is_tech:
-            self.ws_general['C5'] = "='3.技术服务费报价表'!H14"
+            self.ws_general['C5'] = "='4.技术服务费报价表'!H14"
             self.ws_general['B5'] = '技术服务费'
             if self.project.is_cc:
-                self.ws_general['C6'] = "='4.来华培训费报价表'!G17"
+                self.ws_general['C6'] = "='5.来华培训费报价表'!G17"
                 self.ws_general['B6'] = '来华培训费'
         elif self.project.is_cc:
-            self.ws_general['C5'] = "='4.来华培训费报价表'!G17"
+            self.ws_general['C5'] = "='5.来华培训费报价表'!G17"
             self.ws_general['B5'] = '来华培训费'
 
         no_seq = ['二', '三', '四']
@@ -495,7 +497,7 @@ class Quotation(object):
         self.ws_cost['F10'].font = bold_font
         self.ws_cost['F10'].fill = yellow_fill
         self.ws_cost['F10'] = 6.9
-        self.ws_cost['F10'].number_format = '"汇率："0.00'
+        self.ws_cost['F10'].number_format = '"汇率："0.0000'
         self.ws_cost['F15'] = '商检费用'
         self.ws_cost['F15'].font = bold_font
         self.ws_cost['F17'] = '对外货值'
@@ -769,7 +771,7 @@ class Quotation(object):
         self.ws_itemized_quotation['I{}'.format(row_number)] = '=费用输入!J9'
         self.ws_itemized_quotation['K{}'.format(row_number)] = '=费用输入!J13'
         self.ws_itemized_quotation['L{}'.format(row_number)] = \
-            "=ROUND((C{}+'1.投标报价总表'!C7)*0.0003,2)".format(row_number - 2)
+            "=ROUND((sum(C{0}:I{0}))*0.0006,2)".format(row_number - 2)
         self.ws_itemized_quotation['M{}'.format(
             row_number)] = '=SUM(C{0}:L{0})'.format(row_number - 2)
         self.ws_itemized_quotation['J{}'.format(row_number)] = \
@@ -831,6 +833,117 @@ class Quotation(object):
         self.ws_itemized_quotation.page_setup.fitToWidth = 1
         self.ws_itemized_quotation.page_setup.orientation = "landscape"
         self.ws_itemized_quotation.page_margins = PageMargins(left=0.25, right=0.25, top=0.75, bottom=0.75, header=0.3,
+                                                              footer=0.3)
+
+    def create_tax_refund(self):
+        """生成退税额表"""
+        self.ws_tax_refund = self.wb.create_sheet('3.各项物资增值税退抵税额表', 3)
+        colum_title = ['序号', '品名', '投标人向物资生产供货企业支付的商品购买价款（元）',
+                       '物资生产供货企业实缴增值税税率（%）', '投标人预期可获得的退抵物资增值税率（%）',
+                       '投标人预期可获得的退抵物资增值税额（元）']
+
+        title_width = [8, 16, 35, 18, 18, 35]
+        colum_number = len(colum_title)
+        row_number = len(self.project.commodities) + 4
+
+        # 设置基本的样式
+        real_side = Side(style='thin')
+        full_border = Border(
+            left=real_side,
+            right=real_side,
+            top=real_side,
+            bottom=real_side)
+        slash_border = Border(diagonal=real_side, diagonalDown=True, left=real_side, right=real_side,
+                              top=real_side, bottom=real_side)
+        ctr_alignment = Alignment(
+            horizontal='center',
+            vertical='center',
+            wrap_text=True)
+        bold_font = Font(name='宋体', bold=True, size=12)
+        normal_font = Font(name='宋体', size=12)
+        normal_white_font = Font(name='宋体', color='FFFFFF', size=12)
+        title_font = Font(name='黑体', size=14)
+        right_alignment = Alignment(
+            horizontal='right',
+            vertical='center',
+            wrap_text=False)
+        left_alignment = Alignment(
+            horizontal='left',
+            vertical='center',
+            wrap_text=False)
+        # yellow_fill = PatternFill(
+        #     fill_type='solid',
+        #     start_color='FFFF00',
+        #     end_color='FFFF00')
+
+        # 初始化表格
+        for i in range(colum_number):
+            for j in range(2, row_number):  # 留出第一二行
+                cell_now = self.ws_tax_refund.cell(row=j + 1, column=i + 1)
+                cell_now.border = full_border
+                if j == 2:  # 分离标题行
+                    cell_now.font = bold_font
+                    cell_now.alignment = ctr_alignment
+                else:
+                    cell_now.font = normal_font
+                    if i in (2, 5):
+                        cell_now.number_format = '#,##0.00'
+                        cell_now.alignment = right_alignment
+                    else:
+                        cell_now.alignment = ctr_alignment
+
+        for i in range(len(title_width)):  # 修改列宽
+            self.ws_tax_refund.column_dimensions[
+                self.ws_tax_refund.cell(row=4, column=i + 1).column_letter].width = title_width[i]
+        for i in range(row_number + 1):  # 修改行高
+            self.ws_tax_refund.row_dimensions[i].height = 30
+        self.ws_tax_refund.row_dimensions[3].height = 60
+
+        # 创建标题行
+        self.ws_tax_refund['A1'].font = title_font
+        self.ws_tax_refund['A1'].alignment = ctr_alignment
+        self.ws_tax_refund['A1'] = '三.《供货清单（一）》中各项物资增值税退抵税额表'
+        self.ws_tax_refund.row_dimensions[1].height = 60
+
+        # 第二行
+        self.ws_tax_refund['A2'].font = normal_font
+        self.ws_tax_refund['A2'].alignment = left_alignment
+        self.ws_tax_refund['A2'] = '报价单位：人民币元'
+
+        # 填写表头
+        index = 0
+        for i in self.ws_tax_refund['A3':'F3'][0]:
+            i.value = colum_title[index]
+            i.font = bold_font
+            i.alignment = ctr_alignment
+            index += 1
+
+        # 填写数据
+        self.ws_tax_refund['A{}'.format(row_number)] = '共计'
+        if self.project.sec_comlist:
+            row_sum = row_number
+        for row in range(4, row_number):
+            self.ws_tax_refund['A{}'.format(row)] = '=物资输入!A{}'.format(row - 2)
+            self.ws_tax_refund['B{}'.format(row)] = '=物资输入!B{}'.format(row - 2)
+            self.ws_tax_refund['C{}'.format(row)] = '=物资输入!J{}'.format(row - 2)
+            self.ws_tax_refund['D{}'.format(row)] = 13
+            self.ws_tax_refund['E{}'.format(row)] = 13
+            self.ws_tax_refund['F{}'.format(row)] = '=ROUND(C{0}/(1+D{0}/100)*E{0}/100,2)'.format(row)
+
+        self.ws_tax_refund['C{}'.format(row_number)] = '=SUM(C4:C{})'.format(row_number - 1)
+        self.ws_tax_refund['F{}'.format(row_number)] = '=SUM(F4:F{})'.format(row_number - 1)
+        self.ws_tax_refund['B{}'.format(row_number)].border = slash_border
+        self.ws_tax_refund['E{}'.format(row_number)].border = slash_border
+
+        # 合并需要合并单元格
+        self.ws_tax_refund.merge_cells('A1:F1')
+
+        # 打印设置
+        self.ws_tax_refund.print_options.horizontalCentered = True
+        self.ws_tax_refund.print_area = 'A1:F{}'.format(row_number)
+        self.ws_tax_refund.page_setup.fitToWidth = 1
+        self.ws_tax_refund.page_setup.orientation = "landscape"
+        self.ws_tax_refund.page_margins = PageMargins(left=0.25, right=0.25, top=0.75, bottom=0.75, header=0.3,
                                                               footer=0.3)
 
     def create_summed_quotation(self):
@@ -1050,7 +1163,7 @@ class Quotation(object):
 
     def create_techserve(self):
         """创建技术服务费报价表"""
-        self.ws_techserve = self.wb.create_sheet('3.技术服务费报价表', 3)
+        self.ws_techserve = self.wb.create_sheet('4.技术服务费报价表', 3)
         colum_title = [
             '序号',
             '费用名称',
@@ -1118,7 +1231,7 @@ class Quotation(object):
         self.ws_techserve.merge_cells('A1:H1')
         self.ws_techserve['A1'].font = title_font
         self.ws_techserve['A1'].alignment = ctr_alignment
-        self.ws_techserve['A1'] = '三.技术服务费报价表'
+        self.ws_techserve['A1'] = '四.技术服务费报价表'
         self.ws_techserve.row_dimensions[1].height = 40
 
         # 填写表头
@@ -1162,16 +1275,19 @@ class Quotation(object):
                 self.ws_techserve['D{}'.format(row)].number_format = '¥#,##0.00'
                 self.ws_techserve['H{}'.format(row)] = '=D{0}*E{0}'.format(row)
                 self.ws_techserve['G{}'.format(row)] = 0
+                self.ws_techserve['F{}'.format(row)].number_format = '0'
+                self.ws_techserve['F{}'.format(row)] = '-'
             if 11 > row > 7:
                 self.ws_techserve['C{}'.format(row)].number_format = '$#,##0.00'
                 self.ws_techserve['G{}'.format(row)] = '=C{0}*E{0}*F{0}'.format(row)
+                self.ws_techserve['F{}'.format(row)].number_format = '0'
+                self.ws_techserve['F{}'.format(row)] = self.project.techinfo[1]
             if 15 > row > 7:
                 self.ws_techserve['H{}'.format(row)] = '=G{}*C16/100'.format(row)
             if row < 11:
                 self.ws_techserve['E{}'.format(row)].number_format = '0'
                 self.ws_techserve['E{}'.format(row)] = self.project.techinfo[0]
-                self.ws_techserve['F{}'.format(row)].number_format = '0'
-                self.ws_techserve['F{}'.format(row)] = self.project.techinfo[1]
+
         self.ws_techserve['D3'] = 500
         self.ws_techserve['D4'] = 200
         self.ws_techserve['D5'] = 400
@@ -1191,7 +1307,7 @@ class Quotation(object):
         self.ws_techserve['B16'] = '100美元='
         self.ws_techserve['C16'].number_format = '0.00"元人民币"'
         self.ws_techserve['C16'] = '=费用输入!F10*100'
-        self.ws_techserve['C16'].fill = yellow_fill
+        # self.ws_techserve['C16'].fill = yellow_fill
         self.ws_techserve['A16'].font = normal_font
         self.ws_techserve['B16'].font = normal_font
         self.ws_techserve['C16'].font = normal_font
@@ -1320,7 +1436,7 @@ class Quotation(object):
 
     def create_training(self):
         """创建来华培训费报价表"""
-        self.ws_training = self.wb.create_sheet('4.来华培训费报价表', 3)
+        self.ws_training = self.wb.create_sheet('5.来华培训费报价表', 3)
         colum_title = [
             '序号',
             '费用名称',
@@ -1395,7 +1511,7 @@ class Quotation(object):
         index = 0
         if self.project.is_tech:
             index += 1
-        num = ['三', '四', '五', '六', '七']
+        num = ['四', '五', '六', '七']
         self.ws_training['A1'] = '{}.来华培训费报价表'.format(num[index])
         self.ws_training.row_dimensions[1].height = 30
         self.ws_training.merge_cells('A1:H1')
