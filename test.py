@@ -36,6 +36,7 @@ class Project(object):
         self.date = None
         self.destination = None
         self.trans = None
+        self.trans_time = None
         self.totalsum = 0
         self.is_lowprice = False  # 是否为低价法
         self.sec_comlist = False  # 是否有供货清单二
@@ -63,12 +64,12 @@ class Project(object):
                 temp.append(row_now[i].text)
             temp.append(row_now[0].text)  # 把物资编号放在最后一位
             self.commodities[index] = temp
-        self.name, self.code, self.date, self.destination, self.trans = project_info[0:5]
-        self.totalsum = int(project_info[5])
+        self.name, self.code, self.date, self.destination, self.trans, self.trans_time = project_info[0:6]
+        self.totalsum = int(project_info[6])
 
-        if project_info[6] in 'yY':
-            self.is_lowprice = True
         if project_info[7] in 'yY':
+            self.is_lowprice = True
+        if project_info[8] in 'yY':
             self.sec_comlist = True
             table3 = document.tables[2]
             self.commodities2 = {}  # 存放供货清单二物资
@@ -98,15 +99,15 @@ class Project(object):
                 temp.append(row_now[0].text)  # 把物资编号放在最后一位
                 self.commodities2[index] = temp
 
-        if project_info[8] in 'yY':
+        if project_info[9] in 'yY':
             self.is_tech = True
-            self.techinfo += list(map(int, project_info[9:11]))
-        if project_info[11] in 'yY':
-            self.is_qa = True
+            self.techinfo += list(map(int, project_info[10:12]))
         if project_info[12] in 'yY':
+            self.is_qa = True
+        if project_info[13] in 'yY':
             self.is_cc = True
-            self.training_days = int(project_info[14])  # 读取来华陪训天数
-            self.training_num = int(project_info[13])  # 读取来华培训人数
+            self.training_days = int(project_info[15])  # 读取来华陪训天数
+            self.training_num = int(project_info[14])  # 读取来华培训人数
         if project_info[-1] != '':
             if project_info[-1] not in 'Nn':
                 self.qc += list(map(int, project_info[-1].split()))
@@ -118,6 +119,7 @@ class Project(object):
         print('开标日期:', self.date)
         print('目的地:', self.destination)
         print('运输方式:', self.trans)
+        print('运输时间:', self.trans_time)
         print('对外货值：', self.totalsum)
         print('是否为低价法', '是' if self.is_lowprice is True else '否')
         print('是否有供货清单二', '是' if self.sec_comlist is True else '否')
@@ -269,7 +271,7 @@ class Quotation(object):
 
         # 填写数据
         self.ws_general['A4'] = '一'
-        self.ws_general['B4'] = "全部物资价格{}（含商品购买价款、国内运杂费、包装费、报关费、物资检验费、运输保险费、" \
+        self.ws_general['B4'] = "全部物资价格{}（含商品购买价款、国内运杂费、包装费、 保管费、物资检验费、运输保险费、" \
                                 "国外运费、资金占用成本、合理利润、税金）".format(linesep)
         self.ws_general['C4'] = "='2.物资对内分项报价表'!M{}".format(
             len(self.project.commodities) + 4)
@@ -842,7 +844,7 @@ class Quotation(object):
                        '物资生产供货企业实缴增值税税率（%）', '投标人预期可获得的退抵物资增值税率（%）',
                        '投标人预期可获得的退抵物资增值税额（元）']
 
-        title_width = [8, 16, 35, 18, 18, 35]
+        title_width = [8, 16, 30, 22, 25, 30]
         colum_number = len(colum_title)
         row_number = len(self.project.commodities) + 4
 
@@ -897,13 +899,13 @@ class Quotation(object):
                 self.ws_tax_refund.cell(row=4, column=i + 1).column_letter].width = title_width[i]
         for i in range(row_number + 1):  # 修改行高
             self.ws_tax_refund.row_dimensions[i].height = 30
-        self.ws_tax_refund.row_dimensions[3].height = 60
+        self.ws_tax_refund.row_dimensions[3].height = 45
 
         # 创建标题行
         self.ws_tax_refund['A1'].font = title_font
         self.ws_tax_refund['A1'].alignment = ctr_alignment
         self.ws_tax_refund['A1'] = '三.《供货清单（一）》中各项物资增值税退抵税额表'
-        self.ws_tax_refund.row_dimensions[1].height = 60
+        self.ws_tax_refund.row_dimensions[1].height = 40
 
         # 第二行
         self.ws_tax_refund['A2'].font = normal_font
@@ -1919,3 +1921,4 @@ myproject = Project('project.docx')
 myquota = Quotation(myproject)
 myquota.create_all()
 # myproject.show_commodity2()
+# myproject.show_info()
