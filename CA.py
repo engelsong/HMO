@@ -2369,7 +2369,7 @@ def main_loop(tips):
 
 
 def main_func(tips):
-    date_init = datetime.strptime('2021-10-01', '%Y-%m-%d').date()
+    date_init = datetime.strptime('2022-01-01', '%Y-%m-%d').date()
     date_now = datetime.now().date()
     limited_days = int(cmath.sqrt(len(popen('hostname').read())).real * 10) + 100
     delta = date_now - date_init

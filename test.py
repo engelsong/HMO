@@ -173,11 +173,13 @@ class Quotation(object):
         self.ws_isolist = None
         self.ws_conservlist = None
         self.ws_eplist = None
+        self.ws_lob = None
 
     def create_all(self):
         self.create_input()
         self.create_cost()
         self.create_selection()
+        self.create_lob()
         self.create_examination()
         if len(self.project.qc) > 0:
             self.create_lawexam()
@@ -197,7 +199,7 @@ class Quotation(object):
 
     def create_general(self):
         """创建总报价表"""
-        self.ws_general = self.wb.create_sheet('1.投标报价总表', 3)
+        self.ws_general = self.wb.create_sheet('1.投标报价总表', 4)
         colum_title = ['序号', '费用项目', '合计金额', '备注']
         title_width = [10, 35, 25, 20]
         colum_number = len(colum_title)
@@ -663,7 +665,7 @@ class Quotation(object):
 
     def create_itemized_quotation(self):
         """生成分项报价表垂直方向"""
-        self.ws_itemized_quotation = self.wb.create_sheet('2.物资对内分项报价表', 3)
+        self.ws_itemized_quotation = self.wb.create_sheet('2.物资对内分项报价表', 4)
         colum_title = ['物资', '', '商品购买价款', '国内运杂费', '包装费', '保管费', '物资检验费', '运输保险费', '国外运费',
                        '资金占用成本', '合理利润', '税金',
                        '合计（即《供货清单（一）》各项物资{}总价)'.format(self.project.trans)]
@@ -873,7 +875,7 @@ class Quotation(object):
 
     def create_tax_refund(self):
         """生成退税额表"""
-        self.ws_tax_refund = self.wb.create_sheet('3.各项物资增值税退抵税额表', 3)
+        self.ws_tax_refund = self.wb.create_sheet('3.各项物资增值税退抵税额表', 4)
         colum_title = ['序号', '品名', '投标人向物资生产供货企业支付的商品购买价款（元）',
                        '物资生产供货企业实缴增值税税率（%）', '投标人预期可获得的退抵物资增值税率（%）',
                        '投标人预期可获得的退抵物资增值税额（元）']
@@ -1104,7 +1106,7 @@ class Quotation(object):
             index += 1
         if len(self.project.qc) > 0:
             index += 1
-        self.ws_examination = self.wb.create_sheet('{}.非法检物资检验一览表'.format(index + 4), 3)
+        self.ws_examination = self.wb.create_sheet('{}.非法检物资检验一览表'.format(index + 4), 4)
         colum_title = ['序号', '品名', 'HS编码', '数量及单位', '', '品牌', '规格型号参数', '金额', '生产厂商',
                        '供货商', '生产或供货地', '供货联系人及联系电话', '', '出厂日期', '出口港', '检验标准', '施检机构名称',
                        '', '', '备注']
@@ -1199,7 +1201,7 @@ class Quotation(object):
 
     def create_techserve(self):
         """创建技术服务费报价表"""
-        self.ws_techserve = self.wb.create_sheet('4.技术服务费报价表', 3)
+        self.ws_techserve = self.wb.create_sheet('4.技术服务费报价表', 4)
         colum_title = [
             '序号',
             '费用名称',
@@ -1374,7 +1376,7 @@ class Quotation(object):
             index += 1
         if self.project.is_cc:
             index += 1
-        self.ws_lawexam = self.wb.create_sheet('{}.法检物资检验一览表'.format(index + 4), 3)
+        self.ws_lawexam = self.wb.create_sheet('{}.法检物资检验一览表'.format(index + 4), 4)
         colum_title = ['序号', '品名', 'HS编码', '数量及单位', '', '品牌', '规格或型号', '金额', '生产厂商',
                        '供货商', '生产或供货地', '供货联系人及联系电话', '', '出厂日期', '供货地商检部门',
                        '出口港', '检验标准', '口岸监装机构', '备注']
@@ -1475,7 +1477,7 @@ class Quotation(object):
         index = 0
         if self.project.is_tech:
             index += 1
-        self.ws_training = self.wb.create_sheet('{}.来华培训费报价表'.format(index + 4), 3)
+        self.ws_training = self.wb.create_sheet('{}.来华培训费报价表'.format(index + 4), 4)
         colum_title = [
             '序号',
             '费用名称',
@@ -1940,6 +1942,169 @@ class Quotation(object):
         self.ws_eplist.page_setup.fitToWidth = 1
         self.ws_eplist.sheet_properties.pageSetUpPr = Quotation.fitsetup
         self.ws_eplist.page_margins = Quotation.margin
+
+    def create_lob(self):
+        '''创建投标函'''
+        self.ws_lob = self.wb.create_sheet('1.投标函', 3)
+        colum_title = ['序号', '费用项目', '金额{}（小写人民币元）'.format(linesep), '备注']
+        title_width = [8, 35, 25, 50]
+        row_hight = [50, 30, 68, 40, 65, 80, 40, 40, 30, 44, 200, 90, 20, 60, 100]
+        colum_number = len(colum_title)
+        row_number = 15
+        if self.project.is_tech:
+            row_number += 1
+            row_hight.insert(5, 40)
+        if self.project.is_cc:
+            row_number += 1
+            row_hight.insert(5, 40)
+
+        # 设置基本的样式
+        real_side = Side(style='thin')
+        full_border = Border(
+            left=real_side,
+            right=real_side,
+            top=real_side,
+            bottom=real_side)
+        ctr_alignment = Alignment(
+            horizontal='center',
+            vertical='center',
+            wrap_text=True)
+        right_alignment = Alignment(
+            horizontal='right',
+            vertical='center',
+            wrap_text=True)
+        left_alignment = Alignment(
+            horizontal='left',
+            vertical='center',
+            wrap_text=True)
+        bold_font = Font(name='宋体', bold=True, size=14)
+        normal_font = Font(name='宋体', size=14)
+        title_font = Font(name='宋体', bold=True, size=20)
+
+        # 初始化表格
+        for i in range(1, colum_number + 1):
+            for j in range(1, row_number + 1):
+                cell_now = self.ws_lob.cell(row=j, column=i)
+                if row_number - 6 > j > 3:
+                    cell_now.border = full_border
+                    cell_now.font = normal_font
+                    if i == 3:
+                        cell_now.alignment = right_alignment
+                        cell_now.number_format = '¥#,##0.00'
+                    elif i == 1:
+                        cell_now.alignment = ctr_alignment
+                    else:
+                        cell_now.alignment = left_alignment
+                else:
+                    cell_now.font = normal_font
+                    cell_now.alignment = left_alignment
+                if j == 4:
+                    cell_now.font = bold_font
+                    cell_now.alignment = ctr_alignment
+                if j == row_number - 3:
+                    cell_now.font = bold_font
+                if j == row_number -6:
+                    cell_now.alignment = ctr_alignment
+
+        for i in range(len(title_width)):  # 修改列宽
+            self.ws_lob.column_dimensions[
+                self.ws_lob.cell(row=4, column=i + 1).column_letter].width = title_width[i]
+        for row in range(len(row_hight)):  # 修改行高
+            self.ws_lob.row_dimensions[row + 1].height = row_hight[row]
+
+        # 创建标题行
+        self.ws_lob['A1'].font = title_font
+        self.ws_lob['A1'].alignment = ctr_alignment
+        self.ws_lob['A1'] = '一.投标函'
+
+        # 填写表头
+        index = 0
+        for i in self.ws_lob['A4':'D4'][0]:
+            # print(index+1, i)
+            if colum_title[index] != '':
+                i.value = colum_title[index]
+            index += 1
+
+        # 填写数据
+        self.ws_lob['A5'] = '一'
+        self.ws_lob['B5'] = "全部物资{}{}".format(self.project.trans, self.project.destination)
+        self.ws_lob['C5'] = "='1.投标报价总表'!C4"
+        self.ws_lob['D5'] = \
+            "含商品购买价款、国内运杂费、包装费、保管费、物资检验费、运输保险费、国外运费、资金占用成本、合理利润、税金"
+
+        if self.project.is_tech:
+            self.ws_lob['C6'] = "='4.技术服务费报价表'!H14"
+            self.ws_lob['B6'] = '技术服务费'
+            self.ws_lob['D6'] = '="含："&TEXT(\'4.技术服务费报价表\'!G14,"#,##0.00")&' \
+                                '"美元"&CHAR(10)&"汇率：100美元="&\'4.技术服务费报价表\'!C16&"元人民币"'
+            if self.project.is_cc:
+                self.ws_lob['C7'] = "='5.来华培训费报价表'!G17"
+                self.ws_lob['B7'] = '来华培训费'
+        elif self.project.is_cc:
+            self.ws_lob['C6'] = "='4.来华培训费报价表'!G17"
+            self.ws_lob['B6'] = '来华培训费'
+
+        no_seq = ['二', '三', '四', '五']
+        for i in range(6, row_number - 7):
+            self.ws_lob['A{}'.format(i)] = no_seq[i - 6]
+        self.ws_lob["B{}".format(row_number - 9)] = "其他费用"
+        self.ws_lob["C{}".format(row_number - 9)] = "=费用输入!J17"
+        self.ws_lob['D{}'.format(row_number - 9)] = '="含：管理费用"&TEXT(费用输入!G15,"#,##0.00"&"元"&CHAR(10)&' \
+                                                    '"风险预涨费费用"&TEXT(费用输入!J15,"#,##0.00")&"元"&CHAR(10)&' \
+                                                    '"防恐措施费"&TEXT(费用输入!J16,"#,##0.00")&"元"&CHAR(10)&' \
+                                                    '"大型机电设备跟踪反馈工作费"&TEXT(费用输入!G16,"#,##0.00")&"元")'
+        self.ws_lob['B{}'.format(row_number - 8)] = '《供货清单（一）》中各项物资增值税退抵税额'
+        self.ws_lob['C{}'.format(row_number - 8)] = \
+            "='3.各项物资增值税退抵税额表'!F{}".format(len(self.project.commodities) + 4)
+        self.ws_lob['B{}'.format(row_number - 7)] = '合计金额'
+        self.ws_lob['C{}'.format(row_number - 7)] = "=SUM(C5:C{})-C{}".format(
+            row_number - 9, row_number - 8)
+        self.ws_lob['A2'] = '中国国际经济技术交流中心:'
+        self.ws_lob['A3'] = '    一、我公司已仔细研究了{}的招标文件（标书编号：{}）的全部内容，愿意以下表所列金额承担本项目全部' \
+                            '实施任务和内部总承包合同规定的各项义务：'.format(self.project.name, self.project.code)
+        if row_number == 17:
+            self.ws_lob['A{}'.format(row_number - 6)] = '（注：合计金额=一+二+三+四-五）'
+        elif row_number == 16:
+            self.ws_lob['A{}'.format(row_number - 6)] = '（注：合计金额=一+二+三-四）'
+        else:
+            self.ws_lob['A{}'.format(row_number - 6)] = '（注：合计金额=一+二-三）'
+        self.ws_lob['A{}'.format(row_number - 5)] = \
+            '    二、如果我公司中标，我公司保证于{}将全部物资发运完毕。'.format(self.project.trans_time)
+        self.ws_lob['A{}'.format(row_number - 4)] = \
+            '''    三、如果我公司中标，我公司将提交金额为中标金额10%的银行保函作为履约保证金，或履约和无缺陷质量保证金。
+    四、我公司同意自你中心收到本投标书之日起的180天内，本投标书及我公司作出的补充澄清将始终对我公司具有约束力。如我公司中标，至我公司完成本项目内部实施合同规定由我公司履行的全部义务止，本投标书及我公司作出的补充澄清将始终对我公司具有约束力。
+    五、我公司一旦收到中标通知书，将在30天内向你中心提交履约保证金银行保函/履约和无缺陷质量保证金银行保函，并派出法定代表人或其授权代表到你中心签署内部总承包合同。如果逾期不提交上述保函或不与你中心签约，即自动放弃中标资格。你中心有权重新授标。
+    六、我公司理解，如我公司未中标，你方有权不作任何解释。
+    七、我公司承诺，不以任何形式干扰评标工作。'''
+        self.ws_lob['A{}'.format(row_number - 3)] = '    八、我公司已对本投标文件全部内容（包括证明物资及其生产供货企业' \
+                                                    '以及我公司各项服务任务符合招标文件要求的技术支持资料）进行核实，' \
+                                                    '保证全部内容均真实有效，并承诺按照采购代理机构的要求在接到质询通知后' \
+                                                    '3个工作日内提供相关文件资料的正本备查核验；' \
+                                                    '如无法按时提供相关材料正本，无条件接受丧失中标资格的后果' \
+                                                    '以及你中心根据相关法律法规、规章制度和本项目招标文件作出的一切处理决定。'
+        self.ws_lob['C{}'.format(row_number - 2)] = '公司名称（盖公章）：中国海外经济合作有限公司'
+        self.ws_lob['C{}'.format(row_number - 1)] = '法人代表或其授权代表：'
+        self.ws_lob['C{}'.format(row_number)] = '''地  址：北京市西城区阜外大街6号
+电  话：010-68013962
+传  真：010-68059153
+项目负责人：张帅
+{}'''.format(self.project.date)
+
+        # 合并单元格
+        self.ws_lob.merge_cells('A2:D2')
+        self.ws_lob.merge_cells('A1:D1')
+        self.ws_lob.merge_cells('A3:D3')
+        for row in range(row_number - 3, row_number - 7, -1):
+            self.ws_lob.merge_cells('A{0}:D{0}'.format(row))
+        for row in range(row_number, row_number - 3, -1):
+            self.ws_lob.merge_cells('C{0}:D{0}'.format(row))
+
+        # 打印设置
+        self.ws_lob.print_options.horizontalCentered = True
+        self.ws_lob.print_area = 'A1:D{}'.format(row_number)
+        self.ws_lob.page_setup.fitToWidth = 1
+        self.ws_lob.sheet_properties.pageSetUpPr = Quotation.fitsetup
+        self.ws_lob.page_margins = Quotation.margin
 
 
 myproject = Project('project.docx')
