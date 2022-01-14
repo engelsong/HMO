@@ -174,6 +174,8 @@ class Quotation(object):
         self.ws_conservlist = None
         self.ws_eplist = None
         self.ws_lob = None
+        self.ws_self_exam = None
+        self.ws_3rd_exam = None
 
     def create_all(self):
         self.create_input()
@@ -194,6 +196,8 @@ class Quotation(object):
         self.create_isolist()
         self.create_conservlist()
         self.create_eplist()
+        self.create_self_exam()
+        self.create_3rd_exam()
         self.wb.calculation = CalcProperties(iterate=True)
         self.wb.save('投标报价表-{}.xlsx'.format(self.project.name))
 
@@ -373,8 +377,7 @@ class Quotation(object):
                     rela[0], num)] = self.project.commodities[num - 1][rela[1]]
             else:
                 self.ws_input['E{}'.format(num)].number_format = '0'
-                self.ws_input['E{}'.format(num)] = int(
-                    self.project.commodities[num - 1][3])
+                self.ws_input['E{}'.format(num)] = self.project.commodities[num - 1][3]
             self.ws_input['J{}'.format(num)] = '=E{}*I{}'.format(num, num)
 
         # 填写供货清单二的物资数据
@@ -2105,6 +2108,119 @@ class Quotation(object):
         self.ws_lob.page_setup.fitToWidth = 1
         self.ws_lob.sheet_properties.pageSetUpPr = Quotation.fitsetup
         self.ws_lob.page_margins = Quotation.margin
+
+    def create_self_exam(self):
+        """创建自检验收表格"""
+        self.ws_self_exam = self.wb.create_sheet('自检验收表', -1)
+        colum_title = ['序号', '品名', '供货商', '生产或供货地', '拟进行自检验收时间', '人数']
+        title_width = [5, 14, 18, 10, 14, 6]
+
+        # 设置基本的样式
+        real_side = Side(style='thin')
+        full_border = Border(
+            left=real_side,
+            right=real_side,
+            top=real_side,
+            bottom=real_side)
+        ctr_alignment = Alignment(
+            horizontal='center',
+            vertical='center',
+            wrap_text=True)
+        bold_font = Font(name='宋体', bold=True, size=9)
+        normal_font = Font(name='宋体', size=9)
+
+        for i in range(len(title_width)):  # 修改列宽
+            self.ws_self_exam.column_dimensions[
+                self.ws_self_exam.cell(row=4, column=i + 1).column_letter].width = title_width[i]
+
+        # 初始化表格
+        colum_number = len(colum_title)
+        row_number = len(self.project.commodities) + 1
+        for i in range(colum_number):
+            for j in range(row_number):
+                cell_now = self.ws_self_exam.cell(row=j + 1, column=i + 1)
+                cell_now.border = full_border
+                cell_now.font = normal_font
+                cell_now.alignment = ctr_alignment
+
+        self.ws_self_exam.row_dimensions[1].height = 30
+
+        # 填写表头
+        index = 0
+        for i in self.ws_self_exam['A1':'F1'][0]:
+            # print(index+1, i)
+            i.value = colum_title[index]
+            i.font = bold_font
+            index += 1
+
+        # 填入数据
+        col_relate = [('A', 'A'), ('B', 'B'), ('C', 'L'), ('D', 'M')]
+        for row in range(2, row_number + 1):  # 遍历行
+            for col in col_relate:  # 根据对应关系设立公式
+                cell_now = self.ws_self_exam['{}{}'.format(col[0], row)]
+                cell_now.value = '=物资输入!{}{}'.format(col[1], row)
+            self.ws_self_exam['E{}'.format(row)] = '物资交付当天{}预计用时2天'.format(linesep)
+            self.ws_self_exam['F{}'.format(row)] = '2人'
+
+    def create_3rd_exam(self):
+        """创建第三方检验表格"""
+        self.ws_self_exam = self.wb.create_sheet('第三方检验表', -1)
+        colum_title = ['序号', '品名', '厂家交货期', '自检验收时间', '第三方产地检验时间',
+                       '装运前检验时间', '口岸监装时间', '发运时间']
+        title_width = [5, 14, 14, 16, 16, 18, 18, 10]
+
+        days = ''
+        for d in self.project.trans_time:
+            if d.isdigit():
+                days += d
+        days = days + '天内'
+
+        # 设置基本的样式
+        real_side = Side(style='thin')
+        full_border = Border(
+            left=real_side,
+            right=real_side,
+            top=real_side,
+            bottom=real_side)
+        ctr_alignment = Alignment(
+            horizontal='center',
+            vertical='center',
+            wrap_text=True)
+        bold_font = Font(name='宋体', bold=True, size=9)
+        normal_font = Font(name='宋体', size=9)
+
+        for i in range(len(title_width)):  # 修改列宽
+            self.ws_self_exam.column_dimensions[
+                self.ws_self_exam.cell(row=4, column=i + 1).column_letter].width = title_width[i]
+
+        # 初始化表格
+        colum_number = len(colum_title)
+        row_number = len(self.project.commodities) + 1
+        for i in range(colum_number):
+            for j in range(row_number):
+                cell_now = self.ws_self_exam.cell(row=j + 1, column=i + 1)
+                cell_now.border = full_border
+                cell_now.font = normal_font
+                cell_now.alignment = ctr_alignment
+
+        # 填写表头
+        index = 0
+        for i in self.ws_self_exam['A1':'H1'][0]:
+            i.value = colum_title[index]
+            i.font = bold_font
+            index += 1
+
+        # 填入数据
+        col_relate = [('A', 'A'), ('B', 'B'), ('C', 'T')]
+        for row in range(2, row_number + 1):  # 遍历行
+            for col in col_relate:  # 根据对应关系设立公式
+                cell_now = self.ws_self_exam['{}{}'.format(col[0], row)]
+                cell_now.value = '=物资输入!{}{}'.format(col[1], row)
+            self.ws_self_exam['D{}'.format(row)] = '物资交付后2天完成'
+            self.ws_self_exam['E{}'.format(row)] = '物资出厂前5天完成'
+            self.ws_self_exam['F{}'.format(row)] = '口岸发运前3-5天完成'
+            self.ws_self_exam['G{}'.format(row)] = '口岸发运前3-5天完成'
+            self.ws_self_exam['H{}'.format(row)] = days
 
 
 myproject = Project('project.docx')
