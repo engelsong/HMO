@@ -36,6 +36,7 @@ class Project(object):
         self.date = None
         self.destination = None
         self.trans = None
+        self.trans_time = None
         self.totalsum = 0
         self.is_lowprice = False  # 是否为低价法
         self.sec_comlist = False  # 是否有供货清单二
@@ -63,12 +64,12 @@ class Project(object):
                 temp.append(row_now[i].text)
             temp.append(row_now[0].text)  # 把物资编号放在最后一位
             self.commodities[index] = temp
-        self.name, self.code, self.date, self.destination, self.trans = project_info[0:5]
-        self.totalsum = int(project_info[5])
+        self.name, self.code, self.date, self.destination, self.trans, self.trans_time = project_info[0:6]
+        self.totalsum = int(project_info[6])
 
-        if project_info[6] in 'yY':
-            self.is_lowprice = True
         if project_info[7] in 'yY':
+            self.is_lowprice = True
+        if project_info[8] in 'yY':
             self.sec_comlist = True
             table3 = document.tables[2]
             self.commodities2 = {}  # 存放供货清单二物资
@@ -79,7 +80,17 @@ class Project(object):
                 row_now = table3.row_cells(index)
                 length_row = len(row_now)
                 for i in range(1, length_row - 1):  # 将每行信息放入暂存数组
-                    temp.append(row_now[i].text)
+                    if i == 6:
+                        amount = ''
+                        the_unit = ''
+                        for d in row_now[i].text:
+                            if d.isdigit():
+                                amount += d
+                        the_unit = row_now[i].text.replace(amount, '')
+                        temp.append(amount)
+                        temp.append(the_unit)
+                    else:
+                        temp.append(row_now[i].text)
                 price = ''
                 for d in row_now[length_row - 1].text:
                     if d.isdigit() or d == '.':
@@ -88,15 +99,15 @@ class Project(object):
                 temp.append(row_now[0].text)  # 把物资编号放在最后一位
                 self.commodities2[index] = temp
 
-        if project_info[8] in 'yY':
+        if project_info[9] in 'yY':
             self.is_tech = True
-            self.techinfo += list(map(int, project_info[9:11]))
-        if project_info[11] in 'yY':
-            self.is_qa = True
+            self.techinfo += list(map(int, project_info[10:12]))
         if project_info[12] in 'yY':
+            self.is_qa = True
+        if project_info[13] in 'yY':
             self.is_cc = True
-            self.training_days = int(project_info[14])  # 读取来华陪训天数
-            self.training_num = int(project_info[13])  # 读取来华培训人数
+            self.training_days = int(project_info[15])  # 读取来华陪训天数
+            self.training_num = int(project_info[14])  # 读取来华培训人数
         if project_info[-1] != '':
             if project_info[-1] not in 'Nn':
                 self.qc += list(map(int, project_info[-1].split()))
@@ -108,6 +119,7 @@ class Project(object):
         print('开标日期:', self.date)
         print('目的地:', self.destination)
         print('运输方式:', self.trans)
+        print('运输时间:', self.trans_time)
         print('对外货值：', self.totalsum)
         print('是否为低价法', '是' if self.is_lowprice is True else '否')
         print('是否有供货清单二', '是' if self.sec_comlist is True else '否')
@@ -133,9 +145,9 @@ class Project(object):
     def show_commodity2(self):
         temp_list = sorted(list(self.commodities2.keys()))
         for i in temp_list:
-            print(i)
-            for j in self.commodities2[i]:
-                print(j)
+            print(self.commodities2[i])
+            # for j in self.commodities2[i]:
+            #     print(j)
 
 
 class Quotation(object):
@@ -2239,11 +2251,9 @@ class Content(object):
         self.ws_qual = None
         self.ws_eco = None
         self.ws_com = None
-        self.my_title = 'content'
 
     def create_all(self):
         """生成目录总方法"""
-
         self.create_qual()
         self.create_com()
         self.create_eco()
@@ -2424,32 +2434,33 @@ class Content(object):
         self.ws_eco = self.wb.create_sheet('经济标', 0)
         col_titles = ['序号', '内容', '页码']
         content = [
-            '报价总表',
+            '投标报价总表',
             '物资对内分项报价表',
+            '《供货清单（一）》中各项物资增值税退抵税额表'
         ]
         col_width = [10, 60, 10]
         num = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十']
         col_num = 3
 
         # 确定行数
-        row_num = 4
+        row_num = 5
         if len(self.project.qc) == 0:
             row_num += 1
-            content.insert(2, '非法检物资检验一览表')
+            content.insert(3, '非法检物资检验一览表')
         else:
             if len(self.project.qc) == len(self.project.commodities):
                 row_num += 1
-                content.insert(2, '法检物资检验一览表')
+                content.insert(3, '法检物资检验一览表')
             else:
                 row_num += 2
-                content.insert(2, '非法检物资检验一览表')
-                content.insert(2, '法检物资检验一览表')
+                content.insert(3, '非法检物资检验一览表')
+                content.insert(3, '法检物资检验一览表')
         if self.project.is_cc:
             row_num += 1
-            content.insert(2, '来华培训费报价表')
+            content.insert(3, '来华培训费报价表')
         if self.project.is_tech:
             row_num += 1
-            content.insert(2, '技术服务费报价表')
+            content.insert(3, '技术服务费报价表')
 
         # 初始化表格
         for i in range(1, row_num):
