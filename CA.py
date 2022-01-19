@@ -22,7 +22,7 @@ from openpyxl.worksheet.page import PageMargins
 from os import linesep, popen, listdir
 from openpyxl import load_workbook
 from docx.enum import text
-from openpyxl.formatting.rule import CellIsRule
+# from openpyxl.formatting.rule import CellIsRule
 from docx import oxml
 from docx.shared import Pt
 
@@ -805,7 +805,7 @@ class Quotation(object):
         self.ws_itemized_quotation['G{}'.format(row_number)] = '=费用输入!J11'
         self.ws_itemized_quotation['H{}'.format(row_number)] = '=费用输入!J18'
         self.ws_itemized_quotation['I{}'.format(row_number)] = '=费用输入!J9'
-        self.ws_itemized_quotation['K{}'.format(row_number)] = '=费用输入!J12'
+        self.ws_itemized_quotation['K{}'.format(row_number)] = '=费用输入!J13'
         general_row = 7
         if self.project.is_tech:
             general_row += 1
@@ -902,7 +902,6 @@ class Quotation(object):
             wrap_text=True)
         bold_font = Font(name='宋体', bold=True, size=12)
         normal_font = Font(name='宋体', size=12)
-        normal_white_font = Font(name='宋体', color='FFFFFF', size=12)
         title_font = Font(name='黑体', size=14)
         right_alignment = Alignment(
             horizontal='right',
@@ -961,8 +960,7 @@ class Quotation(object):
 
         # 填写数据
         self.ws_tax_refund['A{}'.format(row_number)] = '共计'
-        if self.project.sec_comlist:
-            row_sum = row_number
+
         for row in range(4, row_number):
             self.ws_tax_refund['A{}'.format(row)] = '=物资输入!A{}'.format(row - 2)
             self.ws_tax_refund['B{}'.format(row)] = '=物资输入!B{}'.format(row - 2)
@@ -984,8 +982,8 @@ class Quotation(object):
         self.ws_tax_refund.print_area = 'A1:F{}'.format(row_number)
         self.ws_tax_refund.page_setup.fitToWidth = 1
         self.ws_tax_refund.page_setup.orientation = "landscape"
-        self.ws_tax_refund.page_margins = PageMargins(left=0.25, right=0.25, top=0.75, bottom=0.75, header=0.3,
-                                                              footer=0.3)
+        self.ws_tax_refund.page_margins = \
+            PageMargins(left=0.25, right=0.25, top=0.75, bottom=0.75, header=0.3, footer=0.3)
 
     def create_summed_quotation(self):
         """创建对内总报价表"""
@@ -1233,10 +1231,10 @@ class Quotation(object):
         bold_font = Font(name='宋体', bold=True, size=12)
         normal_font = Font(name='宋体', size=12)
         title_font = Font(name='黑体', size=20)
-        yellow_fill = PatternFill(
-            fill_type='solid',
-            start_color='FFFF00',
-            end_color='FFFF00')
+        # yellow_fill = PatternFill(
+        #     fill_type='solid',
+        #     start_color='FFFF00',
+        #     end_color='FFFF00')
 
         # 初始化表格
         colum_number = len(colum_title)
@@ -1761,10 +1759,8 @@ class Quotation(object):
                 cell_now = self.ws_isolist['{}{}'.format(col[0], row)]
                 cell_now.value = '=物资输入!{}{}'.format(col[1], row - 1)
             self.ws_isolist['E{}'.format(row)] = '响应'
-        re = '1. 在满足清单参数要求的前提下，鼓励本项目投标人各项物资均选用具备质量管理体系、' \
-             '环境管理体系和职业健康与安全管理体系认证的企业生产的物资。{}2. 需提交有效的管理体系认证证明文件为：' \
-             '管理体系认证证书复印件。'.format(linesep)
-        self.ws_isolist['D3'] = re
+        self.ws_isolist['D3'] = '1. 在满足清单参数要求的前提下，鼓励本项目投标人各项物资均选用具备质量管理体系、环境管理体系和' \
+                                '职业健康与安全管理体系认证的企业生产的物资。{}2. 需提交有效的管理体系认证证明文件为：管理体系认证证书复印件。'.format(linesep)
 
         # 打印设置
         self.ws_isolist.print_options.horizontalCentered = True
@@ -1847,11 +1843,9 @@ class Quotation(object):
                 else:
                     cell_now.value = '=物资输入!{}{}'.format(col[1], row - 1)
             self.ws_conservlist['E{}'.format(row)] = '响应'
-        re = '1. 在满足清单参数要求的前提下，鼓励本项目投标人各项物资均选用具备节能产品认证的物资。{}' \
-             '2. 需提交有效的节能产品认证证明文件为：节能产品认证证书复印件' \
-             '（提交的证书须符合《市场监管总局关于发布参与实施政府采购节能产品、环境标志产品认证机构名录的公告》' \
-             '（2019年第16号）等文件要求）。'.format(linesep)
-        self.ws_conservlist['D3'] = re
+        self.ws_conservlist['D3'] = '1. 在满足清单参数要求的前提下，鼓励本项目投标人各项物资均选用具备节能产品认证的物资。{}' \
+             '2. 需提交有效的节能产品认证证明文件为：节能产品认证证书复印件（提交的证书须符合《市场监管总局关于发布参与实施政府' \
+                                    '采购节能产品、环境标志产品认证机构名录的公告》（2019年第16号）等文件要求）。'.format(linesep)
 
         # 打印设置
         self.ws_conservlist.print_options.horizontalCentered = True
